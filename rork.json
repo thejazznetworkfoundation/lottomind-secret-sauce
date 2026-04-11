@@ -1,0 +1,9 @@
+{
+  "apps": [
+    {
+      "name": "LottoMind AI",
+      "path": "expo",
+      "framework": "react-native"
+    }
+  ]
+}
