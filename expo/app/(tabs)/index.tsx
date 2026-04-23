@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -77,6 +77,7 @@ import GlossyButton from '@/components/GlossyButton';
 import AnimatedCard from '@/components/AnimatedCard';
 import PulsingDot from '@/components/PulsingDot';
 import EmailCollector from '@/components/EmailCollector';
+import LottoMindCommandCenter from '@/components/LottoMindCommandCenter';
 
 
 const DONATION_URL = 'http://thejazznetworkfoundation.org';
@@ -123,43 +124,6 @@ export default function GeneratorScreen() {
   const [alertsRotateState, setAlertsRotateState] = useState<number>(0);
   const buttonScale = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
-  const headerScale = useRef(new Animated.Value(0.9)).current;
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const titleGlow = useRef(new Animated.Value(0)).current;
-  const ctaBlinkAnim = useRef(new Animated.Value(1)).current;
-  const liveBlinkAnim = useRef(new Animated.Value(1)).current;
-
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(headerScale, { toValue: 1, friction: 6, tension: 40, useNativeDriver: true }),
-      Animated.timing(headerOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
-    ]).start();
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(titleGlow, { toValue: 1, duration: 2500, useNativeDriver: true }),
-        Animated.timing(titleGlow, { toValue: 0, duration: 2500, useNativeDriver: true }),
-      ])
-    ).start();
-    const ctaBlink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(ctaBlinkAnim, { toValue: 0.3, duration: 600, useNativeDriver: true }),
-        Animated.timing(ctaBlinkAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ])
-    );
-    ctaBlink.start();
-    const liveBlink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(liveBlinkAnim, { toValue: 0.2, duration: 400, useNativeDriver: true }),
-        Animated.timing(liveBlinkAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-      ])
-    );
-    liveBlink.start();
-    return () => {
-      ctaBlink.stop();
-      liveBlink.stop();
-    };
-  }, [headerScale, headerOpacity, titleGlow, ctaBlinkAnim, liveBlinkAnim]);
 
   const toggleToolsDropdown = useCallback(() => {
     const nextExpanded = !toolsExpanded;
@@ -280,156 +244,12 @@ export default function GeneratorScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={[styles.header, { opacity: headerOpacity, transform: [{ scale: headerScale }] }]}>
-          <View style={styles.titleRow}>
-            <TouchableOpacity
-              style={styles.helpBtn}
-              onPress={() => setHelpMenuOpen(true)}
-              activeOpacity={0.7}
-              testID="help-btn"
-            >
-              <HelpCircle size={18} color={Colors.gold} />
-            </TouchableOpacity>
-            <Sparkles size={22} color={Colors.gold} />
-            <Text style={styles.title}>LottoMind™</Text>
-            <Animated.Text style={[styles.badge, { opacity: liveBlinkAnim }]}>LIVE</Animated.Text>
-            <TouchableOpacity
-              style={styles.profileBtn}
-              onPress={() => router.push('/profile')}
-              activeOpacity={0.7}
-              testID="profile-btn"
-            >
-              <Text style={styles.profileLevel}>{level.icon}</Text>
-              <User size={14} color={Colors.gold} />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.subtitleRow}>
-            <Text style={styles.subtitle}>Nationwide engine · </Text>
-            <StatePicker currentState={pickState} stateName={stateName} onSelect={setPickState} />
-            <Text style={styles.subtitle}> · {stateGames.length} games</Text>
-          </View>
-        </Animated.View>
+        <LottoMindCommandCenter
+          onHelpPress={() => setHelpMenuOpen(true)}
+          onGeneratePress={handleGenerate}
+        />
 
-        <AnimatedCard style={styles.userBar} delay={150} depth="shallow" glowColor="rgba(212, 175, 55, 0.12)">
-          <View style={styles.userBarItem}>
-            <Crown size={14} color={level.color} />
-            <Text style={[styles.userBarText, { color: level.color }]}>{plan.toUpperCase()}</Text>
-          </View>
-          <View style={styles.userBarDivider} />
-          <View style={styles.userBarItem}>
-            <Zap size={14} color={Colors.gold} />
-            <Text style={styles.userBarText}>{xp} XP</Text>
-          </View>
-          <View style={styles.userBarDivider} />
-          <View style={styles.userBarItem}>
-            <Text style={styles.userBarCredits}>{totalAvailableCredits} 🪙</Text>
-          </View>
-          {streakDays > 0 && (
-            <>
-              <View style={styles.userBarDivider} />
-              <View style={styles.userBarItem}>
-                <Text style={styles.streakEmoji}>🔥</Text>
-                <Text style={styles.userBarText}>{streakDays}d</Text>
-              </View>
-            </>
-          )}
-        </AnimatedCard>
-
-        <TouchableOpacity
-          style={styles.creditMeterCard}
-          onPress={() => router.push('/credit-store')}
-          activeOpacity={0.85}
-          testID="credit-meter"
-        >
-          <View style={styles.creditMeterHeader}>
-            <Text style={styles.creditMeterLabel}>Credits</Text>
-            <Text style={styles.creditMeterValue}>{monthlyCreditsRemaining}/{monthlyCreditsTotal} monthly</Text>
-          </View>
-          <View style={styles.creditMeterTrack}>
-            <View style={[styles.creditMeterFill, { width: `${Math.min(100, creditUsagePercent)}%` }]} />
-          </View>
-          <View style={styles.creditMeterFooter}>
-            <Text style={styles.creditMeterPurchased}>+{purchasedCredits} purchased</Text>
-            {isLowCredits && <Text style={styles.creditMeterWarning}>Running low!</Text>}
-          </View>
-        </TouchableOpacity>
-
-        <AnimatedCard style={styles.commercialCard} delay={100} depth="deep" glowColor="rgba(212, 175, 55, 0.25)">
-          <View style={styles.commercialHeader}>
-            <Play size={16} color={Colors.gold} />
-            <Text style={styles.commercialTitle}>Featured</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.commercialVideoWrap}
-            onPress={async () => {
-              try {
-                await WebBrowser.openBrowserAsync('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {
-                  presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-                });
-              } catch (e) {
-                console.log('[Home] Failed to open video', e);
-              }
-            }}
-            activeOpacity={0.8}
-            testID="commercial-video"
-          >
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800&q=80' }}
-              style={styles.commercialThumbnail}
-              resizeMode="cover"
-            />
-            <View style={styles.commercialPlayOverlay}>
-              <View style={styles.commercialPlayCircle}>
-                <Play size={22} color="#FFFFFF" />
-              </View>
-            </View>
-            <View style={styles.commercialLabel}>
-              <Text style={styles.commercialLabelText}>Watch: LottoMind™ Promo</Text>
-            </View>
-          </TouchableOpacity>
-        </AnimatedCard>
-
-        <TouchableOpacity
-          style={styles.triviaBanner}
-          onPress={() => router.push('/trivia-rewards' as never)}
-          activeOpacity={0.85}
-          testID="tool-trivia"
-        >
-          <View style={styles.triviaBannerGlow} />
-          <View style={styles.triviaBannerTop}>
-            <View style={styles.triviaBannerIconWrap}>
-              <Trophy size={28} color="#FFD700" />
-            </View>
-            <View style={styles.triviaBannerBadge}>
-              <Zap size={10} color="#FFD700" />
-              <Text style={styles.triviaBannerBadgeText}>EARN CREDITS</Text>
-            </View>
-          </View>
-          <Text style={styles.triviaBannerTitle}>Play Games & Mind Credits</Text>
-          <Text style={styles.triviaBannerDesc}>Play games → earn credits → unlock premium features & number sets</Text>
-          <View style={styles.triviaBannerStats}>
-            <View style={styles.triviaBannerStat}>
-              <Text style={styles.triviaBannerStatValue}>{credits}</Text>
-              <Text style={styles.triviaBannerStatLabel}>Credits</Text>
-            </View>
-            <View style={styles.triviaBannerStatDivider} />
-            <View style={styles.triviaBannerStat}>
-              <Text style={styles.triviaBannerStatValue}>{streakDays > 0 ? `${streakDays}d` : '—'}</Text>
-              <Text style={styles.triviaBannerStatLabel}>Streak</Text>
-            </View>
-            <View style={styles.triviaBannerStatDivider} />
-            <View style={styles.triviaBannerStat}>
-              <Text style={styles.triviaBannerStatValue}>{level.icon}</Text>
-              <Text style={styles.triviaBannerStatLabel}>Rank</Text>
-            </View>
-          </View>
-          <Animated.View style={[styles.triviaBannerCTA, { opacity: ctaBlinkAnim }]}>
-            <Play size={14} color="#1A1200" />
-            <Text style={styles.triviaBannerCTAText}>Start Playing Now</Text>
-            <ChevronRight size={14} color="#1A1200" />
-          </Animated.View>
-        </TouchableOpacity>
-
+        {false ? (
         <View style={styles.toolsSection}>
           <TouchableOpacity
             style={styles.toolsDropdownHeader}
@@ -629,8 +449,7 @@ export default function GeneratorScreen() {
           </View>
           )}
         </View>
-
-        <WinFeed />
+        ) : null}
 
         <GameSwitcher currentGame={currentGame} onSwitch={switchGame} onPickGames={() => router.push('/pick-games')} />
 

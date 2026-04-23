@@ -30,7 +30,6 @@ import { usePro } from '@/providers/ProProvider';
 import { useRouter } from 'expo-router';
 import { GAME_CONFIGS } from '@/constants/games';
 import { interpretDream, DreamResult } from '@/utils/dreamInterpreter';
-import GameSwitcher from '@/components/GameSwitcher';
 import LottoBall from '@/components/LottoBall';
 import GlossyButton from '@/components/GlossyButton';
 
@@ -46,7 +45,7 @@ const DISCLAIMER = 'This feature is for entertainment purposes only. Lottery out
 export default function DreamsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { currentGame, switchGame } = useLotto();
+  const { currentGame } = useLotto();
   const { isPro, canUseDream, freeDreamUsesLeft, useDreamUse, canUseHoroscope, freeHoroscopeUsesLeft } = usePro();
   const config = GAME_CONFIGS[currentGame];
   const [dreamText, setDreamText] = useState<string>('');
@@ -171,7 +170,24 @@ export default function DreamsScreen() {
             <Text style={styles.subtitle}>Describe your dream. AI interprets it into lucky numbers.</Text>
           </View>
 
-          <GameSwitcher currentGame={currentGame} onSwitch={switchGame} />
+          <View style={styles.commercialCard}>
+            <View style={styles.commercialHeader}>
+              <Video size={14} color="#9B8CE8" />
+              <Text style={styles.commercialTitle}>Featured Video</Text>
+            </View>
+            <View style={styles.commercialVideoWrap}>
+              <ExpoVideo
+                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/rf69lfvzqn37d4odtlo8v.mov' }}
+                style={styles.commercialVideo}
+                resizeMode={ResizeMode.CONTAIN}
+                useNativeControls
+                shouldPlay={false}
+                isLooping={false}
+                volume={1.0}
+                isMuted={false}
+              />
+            </View>
+          </View>
 
           {!isPro && (
             <TouchableOpacity
@@ -452,25 +468,6 @@ export default function DreamsScreen() {
               </View>
             </Animated.View>
           )}
-
-          <View style={styles.commercialCard}>
-            <View style={styles.commercialHeader}>
-              <Video size={14} color="#9B8CE8" />
-              <Text style={styles.commercialTitle}>Featured Video</Text>
-            </View>
-            <View style={styles.commercialVideoWrap}>
-              <ExpoVideo
-                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/rf69lfvzqn37d4odtlo8v.mov' }}
-                style={styles.commercialVideo}
-                resizeMode={ResizeMode.CONTAIN}
-                useNativeControls
-                shouldPlay={false}
-                isLooping={false}
-                volume={1.0}
-                isMuted={false}
-              />
-            </View>
-          </View>
 
           <View style={{ height: 30 }} />
         </ScrollView>

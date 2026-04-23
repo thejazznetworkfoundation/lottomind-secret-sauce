@@ -13,7 +13,6 @@ import AppBackground from '@/components/AppBackground';
 import { GAME_CONFIGS } from '@/constants/games';
 import { useLotto } from '@/providers/LottoProvider';
 
-import EmailCollector from '@/components/EmailCollector';
 import { GeneratedSet, StrategyType } from '@/types/lottery';
 
 function getStrategyIcon(strategy: StrategyType) {
@@ -118,12 +117,6 @@ export default function HistoryScreen() {
             <Text style={styles.clearText}>Clear</Text>
           </TouchableOpacity>
         ) : null}
-      </View>
-
-
-
-      <View style={styles.emailCollectorWrap}>
-        <EmailCollector />
       </View>
 
       {history.length === 0 ? (
@@ -328,10 +321,5 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
-  },
-  emailCollectorWrap: {
-    paddingHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 4,
   },
 });

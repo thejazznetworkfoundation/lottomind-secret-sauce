@@ -6,6 +6,9 @@
     "start": "bunx rork start -p bfh49fnlvf8thjizap73y --tunnel",
     "start-web": "bunx rork start -p bfh49fnlvf8thjizap73y --web --tunnel",
     "start-web-dev": "DEBUG=expo* bunx rork start -p bfh49fnlvf8thjizap73y --web --tunnel",
+    "preview:web": "expo start --web --port 8083 --host localhost",
+    "typecheck": "tsc --noEmit",
+    "web:export": "expo export --platform web --output-dir dist --clear --no-minify --max-workers 1",
     "lint": "expo lint"
   },
   "dependencies": {

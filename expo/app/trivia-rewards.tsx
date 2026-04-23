@@ -86,6 +86,13 @@ export default function TriviaRewardsScreen() {
     router.push('/trivia-play' as never);
   };
 
+  const handlePlayArcade = () => {
+    if (Platform.OS !== 'web') {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    router.push('/arcade' as never);
+  };
+
   const handlePlayCrossword = () => {
     if (Platform.OS !== 'web') {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -301,7 +308,7 @@ export default function TriviaRewardsScreen() {
                 <Text style={styles.helpEmoji}>🎮</Text>
                 <View style={styles.helpItemText}>
                   <Text style={styles.helpItemTitle}>Play Games</Text>
-                  <Text style={styles.helpItemDesc}>Every game earns Mind Credits. Trivia gives +5 (Easy), +10 (Medium), or +25 (Hard) per correct answer. Other games 10-30 per completion.</Text>
+                  <Text style={styles.helpItemDesc}>Every game earns Mind Credits. Trivia gives +5 (Easy), +10 (Medium), or +25 (Hard) per correct answer. Arcade runs can earn larger score-based rewards.</Text>
                 </View>
               </View>
               <View style={styles.helpItem}>
@@ -335,6 +342,26 @@ export default function TriviaRewardsScreen() {
             </View>
           )}
         </View>
+
+        <TouchableOpacity
+          style={styles.viralStudioCard}
+          onPress={handlePlayArcade}
+          activeOpacity={0.85}
+          testID="play-lottomind-arcade-btn"
+        >
+          <View style={styles.viralStudioGlow} />
+          <View style={[styles.gameIconWrap, { backgroundColor: 'rgba(191, 115, 255, 0.12)', borderColor: 'rgba(191, 115, 255, 0.3)' }]}>
+            <Gamepad2 size={24} color="#BF73FF" />
+          </View>
+          <View style={styles.viralStudioInfo}>
+            <Text style={styles.viralStudioTitle}>LottoMind Arcade</Text>
+            <Text style={styles.viralStudioDesc}>Gem Rush, Jackpot Chase, Classic Jungle & Gothtechnology</Text>
+          </View>
+          <View style={[styles.gameCardBadge, { backgroundColor: 'rgba(191, 115, 255, 0.15)', borderColor: 'rgba(191, 115, 255, 0.3)' }]}>
+            <Text style={[styles.gameCardBadgeText, { color: '#BF73FF' }]}>EARN</Text>
+          </View>
+          <ChevronRight size={16} color="#BF73FF" />
+        </TouchableOpacity>
 
         <View style={styles.gamesGrid}>
           <TouchableOpacity

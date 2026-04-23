@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Grid3x3, X, Flame, Snowflake, Activity, Radio, TrendingUp, TrendingDown, BarChart3, ChevronRight, Brain } from 'lucide-react-native';
+import { Grid3x3, X, Flame, Snowflake, Activity, Radio, TrendingUp, TrendingDown, ChevronRight, ChevronDown, Brain } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import AppBackground from '@/components/AppBackground';
 import { GAME_CONFIGS } from '@/constants/games';
@@ -21,9 +21,9 @@ import { usePro } from '@/providers/ProProvider';
 import { useTrivia } from '@/providers/TriviaProvider';
 import GameSwitcher from '@/components/GameSwitcher';
 import DailyPick from '@/components/DailyPick';
-import GlossyButton from '@/components/GlossyButton';
 import AnimatedCard from '@/components/AnimatedCard';
 import PulsingDot from '@/components/PulsingDot';
+import WinFeed from '@/components/WinFeed';
 
 function getHeatColor(normalized: number): string {
   if (normalized > 0.8) return Colors.gold;
@@ -52,6 +52,7 @@ export default function HeatmapScreen() {
   const { isPro } = usePro();
   const { isFeatureUnlocked } = useTrivia();
   const [selectedNum, setSelectedNum] = useState<number | null>(null);
+  const [deadNumbersExpanded, setDeadNumbersExpanded] = useState<boolean>(false);
 
   const config = GAME_CONFIGS[currentGame];
 
@@ -61,6 +62,7 @@ export default function HeatmapScreen() {
 
   const hotSet = useMemo(() => new Set(hotNumbers.slice(0, 10)), [hotNumbers]);
   const hottestNumber = hotNumbers.length > 0 ? hotNumbers[0] : null;
+  const deadNumbers = useMemo(() => coldNumbers.slice(0, 12), [coldNumbers]);
 
   const blinkAnim = useRef(new Animated.Value(1)).current;
   const liveDataBlinkAnim = useRef(new Animated.Value(1)).current;
@@ -89,6 +91,10 @@ export default function HeatmapScreen() {
     setSelectedNum(num);
   }, []);
 
+  const toggleDeadNumbers = useCallback(() => {
+    setDeadNumbersExpanded((current) => !current);
+  }, []);
+
   return (
     <AppBackground style={{ paddingTop: insets.top }}>
       <ScrollView
@@ -96,15 +102,6 @@ export default function HeatmapScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <GlossyButton
-          onPress={() => router.push('/nationwide-analysis')}
-          label="Nationwide Number Analysis"
-          icon={<BarChart3 size={20} color="#FFFFFF" />}
-          testID="nationwide-analysis-btn"
-          variant="green"
-          size="medium"
-        />
-
         <TouchableOpacity
           style={styles.intelligenceCard}
           onPress={() => router.push('/intelligence')}
@@ -161,6 +158,44 @@ export default function HeatmapScreen() {
         </Text>
 
         <GameSwitcher currentGame={currentGame} onSwitch={switchGame} />
+
+        <View style={styles.deadDropCard}>
+          <TouchableOpacity
+            style={styles.deadDropHeader}
+            onPress={toggleDeadNumbers}
+            activeOpacity={0.76}
+            testID="heatmap-dead-dropdown"
+          >
+            <View style={styles.deadDropTitleWrap}>
+              <View style={styles.deadDropIcon}>
+                <Snowflake size={18} color="#77B4FF" />
+              </View>
+              <View>
+                <Text style={styles.deadDropTitle}>Dead / Cold Number Watch</Text>
+                <Text style={styles.deadDropSub}>Lower-frequency numbers from the current live model</Text>
+              </View>
+            </View>
+            <View style={{ transform: [{ rotate: deadNumbersExpanded ? '180deg' : '0deg' }] }}>
+              <ChevronDown size={18} color="#77B4FF" />
+            </View>
+          </TouchableOpacity>
+          {deadNumbersExpanded ? (
+            <View style={styles.deadNumberGrid}>
+              {deadNumbers.map((num, index) => (
+                <TouchableOpacity
+                  key={`dead-${num}-${index}`}
+                  style={styles.deadNumberCell}
+                  onPress={() => handleCellPress(num)}
+                  activeOpacity={0.78}
+                >
+                  <Text style={styles.deadNumberText}>{num}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+        </View>
+
+        <WinFeed />
 
         <AnimatedCard style={styles.infoCard} delay={100} depth="medium" glowColor="rgba(212, 175, 55, 0.2)">
           <View style={styles.infoRow}>
@@ -364,9 +399,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingTop: 10,
-    gap: 16,
+    gap: 14,
   },
   header: {
     flexDirection: 'row',
@@ -374,9 +409,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: '800' as const,
-    color: Colors.gold,
+    color: Colors.textPrimary,
   },
   subtitle: {
     fontSize: 13,
@@ -384,13 +419,13 @@ const styles = StyleSheet.create({
     marginTop: -8,
   },
   infoCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 18,
-    padding: 16,
-    gap: 12,
+    backgroundColor: 'rgba(8, 20, 43, 0.82)',
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
     borderWidth: 1,
-    borderColor: Colors.goldBorder,
-    shadowColor: '#D4AF37',
+    borderColor: 'rgba(100, 198, 255, 0.16)',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
@@ -470,13 +505,13 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 5,
+    gap: 4,
     justifyContent: 'center',
   },
   cell: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -504,8 +539,69 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   cellText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700' as const,
+  },
+  deadDropCard: {
+    borderRadius: 16,
+    padding: 12,
+    backgroundColor: 'rgba(8, 20, 43, 0.84)',
+    borderWidth: 1,
+    borderColor: 'rgba(119, 180, 255, 0.18)',
+  },
+  deadDropHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  deadDropTitleWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  deadDropIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(119, 180, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(119, 180, 255, 0.2)',
+  },
+  deadDropTitle: {
+    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '800' as const,
+  },
+  deadDropSub: {
+    marginTop: 2,
+    color: Colors.textMuted,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  deadNumberGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  deadNumberCell: {
+    width: 38,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(52, 152, 219, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(119, 180, 255, 0.24)',
+  },
+  deadNumberText: {
+    color: '#D8ECFF',
+    fontSize: 12,
+    fontWeight: '800' as const,
   },
   modalOverlay: {
     flex: 1,

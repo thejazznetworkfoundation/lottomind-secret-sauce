@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LottoMind™ | Lotto Minded</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero__copy">
+        <p class="eyebrow">LottoMind™ Arcade / 2600 Remix</p>
+        <div class="brand-row">
+          <span class="brand-chip">LottoMind Signal Build</span>
+          <span class="brand-chip brand-chip--subtle">Cyber Jungle Edition</span>
+        </div>
+        <h1>Lotto Minded</h1>
+        <p class="tagline">
+          A LottoMind-styled browser remix of Atari Pitfall logic, rebuilt with
+          your custom jungle cast, original-style jump timing, assembly-driven
+          scene logic, and cleaner hazard reads for the web.
+        </p>
+      </div>
+      <div class="hero__feature hero__feature--art">
+        <p class="hero__feature-label">Jackpot Chase Visual Direction</p>
+        <img class="hero__feature-art" src="assets/jackpot-chase-preview.png" alt="LottoMind Jackpot Chase Mode boss stage preview art">
+        <div class="prescription-pill" id="hero-target-pill">
+          <span id="hero-target-label">Jungle Entry</span>
+        </div>
+        <p class="hero__feature-copy" id="hero-target-copy">
+          Scene rules are being pulled from the original assembly tables with a
+          branded LottoMind presentation layer and the new Vault Run art tone.
+        </p>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="stage-card">
+        <div class="stage-card__header">
+          <div>
+            <p class="stage-card__eyebrow">Vault Run Build</p>
+            <h2 class="stage-card__title">Jackpot Chase Mode</h2>
+          </div>
+          <div class="stage-card__gems" aria-hidden="true">
+            <span class="stage-card__gem"></span>
+            <span class="stage-card__gem"></span>
+            <span class="stage-card__gem"></span>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="hud__item">
+            <span class="hud__label">Score</span>
+            <strong class="hud__value" id="score">0</strong>
+          </div>
+          <div class="hud__item">
+            <span class="hud__label">Lives</span>
+            <strong class="hud__value" id="lives">3</strong>
+          </div>
+          <div class="hud__item">
+            <span class="hud__label">Time</span>
+            <strong class="hud__value" id="combo">20:00</strong>
+          </div>
+          <div class="hud__item">
+            <span class="hud__label">Scene</span>
+            <strong class="hud__value" id="level">001</strong>
+          </div>
+          <div class="hud__item hud__item--wide">
+            <span class="hud__label">Run Status</span>
+            <strong class="hud__value" id="status">Press Start to begin</strong>
+          </div>
+        </div>
+
+        <div class="canvas-shell">
+          <canvas id="game" width="720" height="920" aria-label="Lotto Minded arcade game"></canvas>
+
+          <div class="overlay" id="start-overlay">
+            <div class="overlay__card">
+              <p class="overlay__eyebrow">How To Play</p>
+              <h2>Run the LottoMind jungle</h2>
+              <p>
+                Move Harry through assembly-driven scenes, jump hazards, use the
+                ladder when it's present, and release from the liana to clear
+                pits and crocs with movement tuned closer to the 1982 game.
+              </p>
+              <p>
+                Keyboard: <strong>Arrow keys</strong> or <strong>A / D</strong>,
+                <strong>Space</strong> to jump, <strong>E</strong> to use a
+                ladder or release a liana, and <strong>P</strong> to pause.
+              </p>
+              <button class="primary-button" id="start-button">Start Run</button>
+            </div>
+          </div>
+
+          <div class="overlay hidden" id="pause-overlay">
+            <div class="overlay__card overlay__card--compact">
+              <p class="overlay__eyebrow">Paused</p>
+              <h2>Hold the signal</h2>
+              <p>Press <strong>P</strong> or tap Resume when you're ready.</p>
+              <button class="primary-button" id="resume-button">Resume</button>
+            </div>
+          </div>
+
+          <div class="overlay hidden" id="game-over-overlay">
+            <div class="overlay__card">
+              <p class="overlay__eyebrow">LottoMind Run Over</p>
+              <h2 id="game-over-title">Harry needs another shot</h2>
+              <p id="game-over-copy">You made it through the jungle.</p>
+              <div class="overlay__stats">
+                <span>Final Score</span>
+                <strong id="final-score">0</strong>
+              </div>
+              <div class="overlay__stats">
+                <span>Best Score</span>
+                <strong id="best-score">0</strong>
+              </div>
+              <button class="primary-button" id="restart-button">Run Again</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-deck" aria-label="On-screen controls">
+          <div class="control-cluster">
+            <span class="control-cluster__label">Movement</span>
+            <div class="dpad">
+              <button class="control-button control-button--move control-button--up" data-move="up" aria-label="Climb up or move up">Up</button>
+              <button class="control-button control-button--move control-button--left" data-move="left" aria-label="Move left">Left</button>
+              <button class="control-button control-button--move control-button--down" data-move="down" aria-label="Climb down or move down">Down</button>
+              <button class="control-button control-button--move control-button--right" data-move="right" aria-label="Move right">Right</button>
+            </div>
+          </div>
+
+          <div class="control-cluster control-cluster--actions">
+            <span class="control-cluster__label">Actions</span>
+            <div class="action-pad">
+              <button class="control-button control-button--jump" id="jump-button" aria-label="Jump">Jump</button>
+              <button class="control-button control-button--use" id="use-button" aria-label="Use ladder or release liana">Use</button>
+              <button class="control-button control-button--pause" id="pause-button" aria-label="Pause game">Pause</button>
+            </div>
+          </div>
+        </div>
+        <p class="control-hint">
+          Touch controls stay on screen at all times. Use <strong>Up</strong>
+          and <strong>Down</strong> on ladders, <strong>Jump</strong> to clear
+          hazards, and <strong>Use</strong> to catch or release the vine.
+        </p>
+      </section>
+
+      <aside class="info-card">
+        <div class="info-card__block">
+          <p class="info-card__eyebrow">Scene Readout</p>
+          <h3 id="sidebar-target">Jungle Entry</h3>
+          <p id="sidebar-copy">The active scene is decoded from the original random table.</p>
+        </div>
+
+        <div class="info-card__block">
+          <p class="info-card__eyebrow">LottoMind Lead</p>
+          <img class="roster-preview" src="assets/lottomind-main-hero-clean.png" alt="Main LottoMind hero character">
+        </div>
+
+        <div class="info-card__block info-card__block--art">
+          <p class="info-card__eyebrow">Vault Run Boards</p>
+          <div class="art-grid">
+            <img class="art-card" src="assets/vault-run-sheet.png" alt="LottoMind Vault Run character and sprite placement sheet">
+            <img class="art-card" src="assets/jackpot-chase-preview.png" alt="LottoMind Jackpot Chase Mode boss stage preview">
+          </div>
+        </div>
+
+        <div class="info-card__block">
+          <p class="info-card__eyebrow">Tuned Feel</p>
+          <ul class="tip-list">
+            <li>The touch deck now includes a full ladder-ready movement pad instead of only left and right buttons.</li>
+            <li>Stage chrome and canvas colors are being pushed toward the purple-and-gold jackpot chase boards you supplied.</li>
+            <li>The LottoMind cast sheet is driving the hero, crocs, cobra, and scorpion sprites in-game.</li>
+          </ul>
+        </div>
+
+        <div class="info-card__block">
+          <p class="info-card__eyebrow">LottoMind Feed</p>
+          <div class="feed" id="feed" aria-live="polite"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="pitfall-port.js"></script>
+</body>
+</html>

@@ -199,7 +199,7 @@ export default function CreditStoreScreen() {
 
             <TouchableOpacity
               style={styles.rewardedAdCard}
-              onPress={() => router.push('/trivia-rewards' as never)}
+              onPress={() => router.push('/arcade' as never)}
               activeOpacity={0.85}
               testID="trivia-credits-btn"
             >
@@ -207,8 +207,8 @@ export default function CreditStoreScreen() {
                 <Gift size={22} color="#FFD700" />
               </View>
               <View style={styles.packInfo}>
-                <Text style={styles.packName}>Play Games for Credits</Text>
-                <Text style={styles.packMeta}>Earn credits through trivia & games</Text>
+                <Text style={styles.packName}>Play LottoMind Arcade</Text>
+                <Text style={styles.packMeta}>Earn credits through arcade, trivia & games</Text>
               </View>
               <ChevronRight size={18} color={Colors.textMuted} />
             </TouchableOpacity>

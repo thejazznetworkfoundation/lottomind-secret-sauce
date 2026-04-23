@@ -7,6 +7,22 @@ This is a native cross-platform mobile app created with [Rork](https://rork.com)
 **Platform**: Native iOS & Android app, exportable to web
 **Framework**: Expo Router + React Native
 
+## Shareable web preview
+
+This repo is set up to publish a browser preview through GitHub Pages whenever `main` is pushed.
+
+Preview URL: https://thejazznetworkfoundation.github.io/lottomind-secret-sauce/
+
+Manual publish path:
+
+```bash
+npm install --legacy-peer-deps
+npm run typecheck
+npm run web:export
+```
+
+The GitHub workflow in the repo-root `.github/workflows/pages-preview.yml` builds the Expo app from the `expo` folder, uploads `expo/dist`, and adds a `404.html` fallback so deep links such as `/arcade` and `/powertools` can be shared.
+
 ## How can I edit this code?
 
 There are several ways of editing your native mobile application.

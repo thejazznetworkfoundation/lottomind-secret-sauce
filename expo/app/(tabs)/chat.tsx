@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Send, Brain, User, Sparkles, Radio, TrendingUp, Dice3, Dice4, MapPin, ScanLine, BarChart3, ShoppingBag } from 'lucide-react-native';

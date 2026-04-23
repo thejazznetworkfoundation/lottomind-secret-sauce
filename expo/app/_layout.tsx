@@ -12,6 +12,7 @@ import { TriviaProvider } from "@/providers/TriviaProvider";
 import { ThemeProvider, useTheme } from "@/providers/ThemeProvider";
 import { MonetizationProvider } from "@/providers/MonetizationProvider";
 import LegalDisclaimer from "@/components/LegalDisclaimer";
+import SwipeScreenNavigator from "@/components/SwipeScreenNavigator";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -41,6 +42,7 @@ function RootLayoutNav() {
       <Stack.Screen name="trivia-rewards" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="trivia-play" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="trivia-redeem" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="arcade" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="help" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="viral-studio" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="us-lottery" options={{ presentation: 'modal', headerShown: false }} />
@@ -72,7 +74,9 @@ export default function RootLayout() {
                     <ThemeProvider>
                       <LegalDisclaimer>
                         <ThemedStatusBar />
-                        <RootLayoutNav />
+                        <SwipeScreenNavigator>
+                          <RootLayoutNav />
+                        </SwipeScreenNavigator>
                       </LegalDisclaimer>
                     </ThemeProvider>
                   </TriviaProvider>

@@ -71,12 +71,12 @@ async function scrapeJackpotFromPage(game: GameType): Promise<{ jackpot: number;
 
     if (moneyMatches.length === 0) return null;
 
-    const jackpotRaw = moneyMatches[0];
+    const jackpotRaw = moneyMatches[0] ?? null;
     const jackpot = parseJackpotAmount(jackpotRaw);
 
     let cashValue = 0;
     if (moneyMatches.length > 1) {
-      cashValue = parseJackpotAmount(moneyMatches[1]);
+      cashValue = parseJackpotAmount(moneyMatches[1] ?? null);
     }
     if (cashValue === 0 && jackpot > 0) {
       cashValue = Math.round(jackpot * 0.48);

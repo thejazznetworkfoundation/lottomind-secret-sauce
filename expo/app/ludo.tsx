@@ -61,6 +61,9 @@ export default function LudoScreen() {
   const diceScale = useRef(new Animated.Value(1)).current;
   const diceRotate = useRef(new Animated.Value(0)).current;
   const boardPulse = useRef(new Animated.Value(0)).current;
+  const winner = gameOver
+    ? scores.indexOf(Math.max(...scores))
+    : -1;
 
   useEffect(() => {
     Animated.loop(
@@ -163,10 +166,6 @@ export default function LudoScreen() {
       void Haptics.selectionAsync();
     }
   }, []);
-
-  const winner = gameOver
-    ? scores.indexOf(Math.max(...scores))
-    : -1;
 
   const DiceIcon = diceValue ? getDiceIcon(diceValue) : Dice1;
 
