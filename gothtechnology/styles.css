@@ -1,0 +1,211 @@
+:root {
+  --ink: #03040a;
+  --panel: rgba(7, 9, 18, 0.9);
+  --panel-soft: rgba(255, 255, 255, 0.06);
+  --line: rgba(220, 185, 255, 0.18);
+  --text: #f7eeff;
+  --muted: #bbaed0;
+  --purple: #c76cff;
+  --gold: #ffc95f;
+  --teal: #67f4ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(199, 108, 255, 0.22), transparent 28rem),
+    radial-gradient(circle at 80% 10%, rgba(103, 244, 255, 0.16), transparent 24rem),
+    linear-gradient(135deg, #03040a 0%, #061116 52%, #090512 100%);
+  color: var(--text);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+button {
+  border: 0;
+  font: inherit;
+}
+
+.shell {
+  width: min(1120px, calc(100vw - 24px));
+  margin: 0 auto;
+  padding: 20px 0 28px;
+}
+
+.intro {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.intro > div:first-child,
+.status-card {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(8, 10, 20, 0.96), rgba(18, 8, 28, 0.86));
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.38);
+}
+
+.intro > div:first-child {
+  flex: 1;
+  padding: 18px;
+}
+
+.kicker,
+.status-card span,
+.hud span {
+  color: var(--purple);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 6px 0 0;
+  font-size: clamp(34px, 6vw, 72px);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
+}
+
+.brief {
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.status-card {
+  width: min(330px, 34vw);
+  padding: 18px;
+}
+
+.status-card strong {
+  display: block;
+  margin-top: 9px;
+  color: var(--gold);
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.game-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: #02040a;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46);
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #010309;
+  image-rendering: pixelated;
+}
+
+.hud {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.hud > div,
+.hud button {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(4, 6, 14, 0.74);
+  backdrop-filter: blur(10px);
+  padding: 10px 12px;
+}
+
+.hud strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+}
+
+.hud button {
+  min-width: 120px;
+  color: #211108;
+  background: linear-gradient(135deg, var(--gold), #ff8d45);
+  font-weight: 900;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.touch-deck {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.cluster {
+  display: flex;
+  gap: 10px;
+}
+
+.touch-deck button {
+  min-width: 92px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  color: var(--text);
+  background: linear-gradient(145deg, rgba(18, 22, 35, 0.95), rgba(45, 20, 58, 0.9));
+  padding: 14px 16px;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.touch-deck button:active,
+.touch-deck button.is-held {
+  color: #1b0a24;
+  background: linear-gradient(135deg, var(--purple), var(--teal));
+}
+
+@media (max-width: 720px) {
+  .intro {
+    display: block;
+  }
+
+  .status-card {
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hud button {
+    grid-column: span 2;
+  }
+
+  .touch-deck,
+  .cluster {
+    flex-wrap: wrap;
+  }
+
+  .touch-deck button {
+    flex: 1;
+    min-width: 88px;
+  }
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gothtechnology | LottoMind™ Arcade</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="intro">
+        <div>
+          <p class="kicker">LottoMind™ Arcade / Mind Credits</p>
+          <h1>Gothtechnology</h1>
+          <p class="brief">
+            Neon run-and-gun side scroller. Push through the gothic jungle grid, collect mind credits, and shut down
+            the cathedral core.
+          </p>
+        </div>
+        <div class="status-card">
+          <span>Controls</span>
+          <strong>WASD or arrows, Space/J fire, K melee</strong>
+        </div>
+      </section>
+
+      <section class="game-card">
+        <canvas id="game" width="960" height="540" aria-label="Gothtechnology playable game"></canvas>
+        <div class="hud">
+          <div>
+            <span>Score</span>
+            <strong id="score">000000</strong>
+          </div>
+          <div>
+            <span>Mind Credits</span>
+            <strong id="credits">0</strong>
+          </div>
+          <div>
+            <span>Vitals</span>
+            <strong id="vitals">5</strong>
+          </div>
+          <button id="startButton" type="button">Start Run</button>
+        </div>
+      </section>
+
+      <section class="touch-deck" aria-label="Touch controls">
+        <div class="cluster">
+          <button type="button" data-action="left">Left</button>
+          <button type="button" data-action="down">Crouch</button>
+          <button type="button" data-action="right">Right</button>
+        </div>
+        <div class="cluster">
+          <button type="button" data-action="jump">Jump</button>
+          <button type="button" data-action="fire">Fire</button>
+          <button type="button" data-action="melee">Melee</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="./gothtechnology.js"></script>
+  </body>
+</html>
