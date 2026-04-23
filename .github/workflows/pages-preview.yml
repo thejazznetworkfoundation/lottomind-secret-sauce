@@ -40,13 +40,16 @@ jobs:
       - name: Export static web app
         run: npm run web:export
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
       - name: Add GitHub Pages fallbacks
         run: |
           touch dist/.nojekyll
           cp dist/index.html dist/404.html
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: expo/dist
 
@@ -60,4 +63,4 @@ jobs:
     steps:
       - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
