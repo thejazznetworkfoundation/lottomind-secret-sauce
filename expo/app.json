@@ -38,7 +38,8 @@
       "expo-web-browser"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/lottomind-secret-sauce"
     }
   }
 }

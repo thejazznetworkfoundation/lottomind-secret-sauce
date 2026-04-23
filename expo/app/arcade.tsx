@@ -39,6 +39,23 @@ function getRunCreditReward(game: ArcadeGameCatalogEntry, score: number, victory
   return Math.max(10, Math.min(260, base + scoreBonus + winBonus));
 }
 
+const GITHUB_PAGES_BASE_PATH = '/lottomind-secret-sauce';
+
+function getHostedGamePath(path: string) {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return path;
+  }
+
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const isGitHubPagesPreview = window.location.pathname.startsWith(GITHUB_PAGES_BASE_PATH);
+
+  if (!isGitHubPagesPreview || normalizedPath.startsWith(`${GITHUB_PAGES_BASE_PATH}/`)) {
+    return normalizedPath;
+  }
+
+  return `${GITHUB_PAGES_BASE_PATH}${normalizedPath}`;
+}
+
 function ActionButton({
   label,
   onPressIn,
@@ -180,7 +197,8 @@ function WebArcadeCabinet({
   const [isLoaded, setIsLoaded] = useState(false);
   const awardedLaunchRef = useRef(false);
   const frameHeight = Math.round(Math.max(430, Math.min(760, height * (width < 430 ? 0.72 : 0.66))));
-  const frameSrc = `${game.embedPath}${game.embedPath.includes('?') ? '&' : '?'}arcade=1`;
+  const hostedEmbedPath = useMemo(() => getHostedGamePath(game.embedPath), [game.embedPath]);
+  const frameSrc = `${hostedEmbedPath}${hostedEmbedPath.includes('?') ? '&' : '?'}arcade=1`;
 
   useEffect(() => {
     setIsLoaded(false);
@@ -197,12 +215,12 @@ function WebArcadeCabinet({
 
   const openStandalone = useCallback(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.open(game.embedPath, '_blank', 'noopener,noreferrer');
+      window.open(hostedEmbedPath, '_blank', 'noopener,noreferrer');
       return;
     }
 
-    void Linking.openURL(game.embedPath);
-  }, [game.embedPath]);
+    void Linking.openURL(hostedEmbedPath);
+  }, [hostedEmbedPath]);
 
   if (Platform.OS !== 'web') {
     return <MobileCreditChallenge game={game} onAward={onAward} />;
