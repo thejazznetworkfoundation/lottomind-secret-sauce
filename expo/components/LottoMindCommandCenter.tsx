@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,6 +22,7 @@ import {
   Play,
   ScanLine,
   Search,
+  ShoppingBag,
   Sparkles,
   Ticket,
   Trophy,
@@ -62,6 +64,7 @@ export default function LottoMindCommandCenter({
   onGeneratePress,
 }: LottoMindCommandCenterProps) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const {
     currentGame,
     hotNumbers,
@@ -95,6 +98,8 @@ export default function LottoMindCommandCenter({
     () => getNumbersPreview(coldNumbers, [2, 11, 28, 3, 15]),
     [coldNumbers]
   );
+  const isCompactHero = width < 520;
+  const isUltraCompactHero = width < 430;
   const commandActions: CommandAction[] = [
     {
       title: 'Play Arcade',
@@ -105,12 +110,12 @@ export default function LottoMindCommandCenter({
       testID: 'command-arcade',
     },
     {
-      title: 'Credit Vault',
-      detail: 'Buy or earn',
-      icon: CircleDollarSign,
+      title: 'Store',
+      detail: 'Marketplace',
+      icon: ShoppingBag,
       color: '#F9C74F',
       route: '/credit-store',
-      testID: 'command-credits',
+      testID: 'command-store',
     },
   ];
 
@@ -167,10 +172,16 @@ export default function LottoMindCommandCenter({
         colors={['rgba(7, 19, 43, 0.98)', 'rgba(5, 11, 28, 0.96)', 'rgba(1, 9, 22, 0.98)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.heroCard}
+        style={[styles.heroCard, isCompactHero && styles.heroCardCompact]}
       >
-        <View style={styles.staticCircuitGlow} />
-        <View style={styles.heroCopy}>
+        <View style={[styles.staticCircuitGlow, isCompactHero && styles.staticCircuitGlowCompact]} />
+        <View
+          style={[
+            styles.heroCopy,
+            isCompactHero && styles.heroCopyCompact,
+            isUltraCompactHero && styles.heroCopyUltraCompact,
+          ]}
+        >
           <View style={styles.heroBadge}>
             <Crown size={13} color="#1A1200" />
             <Text style={styles.heroBadgeText}>{isPro ? 'PRO MEMBER' : `${plan.toUpperCase()} MODE`}</Text>
@@ -181,20 +192,30 @@ export default function LottoMindCommandCenter({
             A cleaner LottoMind™ command center for picks, games, credits, and ticket tools.
           </Text>
           <View style={styles.heroButtons}>
-            <Pressable style={styles.primaryButton} onPress={() => handleRoute('/powertools')}>
-              <Zap size={15} color="#07101F" />
-              <Text style={styles.primaryButtonText}>Open Power Tools</Text>
+            <Pressable style={styles.primaryButton} onPress={() => handleRoute('/credit-store')}>
+              <ShoppingBag size={15} color="#07101F" />
+              <Text style={styles.primaryButtonText}>Open Store</Text>
             </Pressable>
             <Pressable style={styles.secondaryButton} onPress={() => handleRoute('/arcade')}>
               <Play size={15} color={Colors.goldLight} />
-              <Text style={styles.secondaryButtonText}>Play Games</Text>
+              <Text style={styles.secondaryButtonText}>Play Arcade</Text>
             </Pressable>
           </View>
         </View>
-        <View style={styles.heroIntelligencePanel}>
+        <View
+          style={[
+            styles.heroIntelligencePanel,
+            isCompactHero && styles.heroIntelligencePanelCompact,
+            isUltraCompactHero && styles.heroIntelligencePanelUltraCompact,
+          ]}
+        >
           <Video
             source={commandCoreVideo}
-            style={styles.heroVideo}
+            style={[
+              styles.heroVideo,
+              isCompactHero && styles.heroVideoCompact,
+              isUltraCompactHero && styles.heroVideoUltraCompact,
+            ]}
             resizeMode={ResizeMode.CONTAIN}
             shouldPlay
             isLooping
@@ -492,6 +513,10 @@ const styles = StyleSheet.create({
     shadowRadius: 28,
     elevation: 9,
   },
+  heroCardCompact: {
+    minHeight: 242,
+    padding: 18,
+  },
   staticCircuitGlow: {
     position: 'absolute',
     top: 0,
@@ -500,10 +525,19 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: 'rgba(0, 229, 255, 0.055)',
   },
+  staticCircuitGlowCompact: {
+    width: '40%',
+  },
   heroCopy: {
     width: '56%',
     gap: 9,
     zIndex: 2,
+  },
+  heroCopyCompact: {
+    width: '62%',
+  },
+  heroCopyUltraCompact: {
+    width: '66%',
   },
   heroBadge: {
     alignSelf: 'flex-start',
@@ -588,10 +622,31 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(135, 247, 255, 0.32)',
     overflow: 'hidden',
   },
+  heroIntelligencePanelCompact: {
+    right: 10,
+    top: 24,
+    bottom: 24,
+    width: '32%',
+    borderRadius: 20,
+  },
+  heroIntelligencePanelUltraCompact: {
+    right: 8,
+    top: 30,
+    bottom: 30,
+    width: '26%',
+    borderRadius: 18,
+  },
   heroVideo: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
+    width: '88%',
+    height: '82%',
+  },
+  heroVideoCompact: {
+    width: '82%',
+    height: '74%',
+  },
+  heroVideoUltraCompact: {
+    width: '76%',
+    height: '66%',
   },
   heroVideoOverlay: {
     ...StyleSheet.absoluteFillObject,

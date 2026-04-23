@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { X } from 'lucide-react-native';
+import { ChevronRight, CircleDollarSign, ShoppingBag, X } from 'lucide-react-native';
 
 import AppBackground from '@/components/AppBackground';
 import { ArcadeGameCard } from '@/components/arcade/ArcadeGameCard';
@@ -387,6 +387,19 @@ export default function ArcadeScreen() {
             <Text style={styles.balanceLabel}>Current Balance</Text>
             <Text style={styles.balanceValue}>{formatCredits(credits)} Credits</Text>
           </View>
+          <Pressable style={styles.vaultCard} onPress={() => router.push('/credit-store' as never)}>
+            <View style={styles.vaultIconWrap}>
+              <CircleDollarSign size={22} color={ARCADE_COLORS.gold} />
+            </View>
+            <View style={styles.vaultCopy}>
+              <Text style={styles.vaultLabel}>Credit Vault</Text>
+              <Text style={styles.vaultHint}>Open the marketplace, reload credits, and unlock store drops.</Text>
+            </View>
+            <View style={styles.vaultChevronWrap}>
+              <ShoppingBag size={16} color={ARCADE_COLORS.gold} />
+              <ChevronRight size={16} color={ARCADE_COLORS.muted} />
+            </View>
+          </Pressable>
           {lastAward ? (
             <View style={styles.awardToast}>
               <Text style={styles.awardText}>+{lastAward.credits} credits from {lastAward.title}</Text>
@@ -586,6 +599,47 @@ const styles = StyleSheet.create({
     color: ARCADE_COLORS.gold,
     fontSize: 18,
     fontWeight: '900',
+  },
+  vaultCard: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    backgroundColor: 'rgba(255, 201, 95, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 201, 95, 0.22)',
+  },
+  vaultIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 201, 95, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 201, 95, 0.24)',
+  },
+  vaultCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  vaultLabel: {
+    color: ARCADE_COLORS.text,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  vaultHint: {
+    color: ARCADE_COLORS.muted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  vaultChevronWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   awardToast: {
     marginTop: 12,
