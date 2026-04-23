@@ -688,6 +688,7 @@ export default function GeneratorScreen() {
           )}
         </AnimatedCard>
 
+        {false ? (
         <AnimatedCard style={styles.liveCard} delay={500} depth="medium" glowColor="rgba(212, 175, 55, 0.18)">
           <View style={styles.liveCardTop}>
             <View style={styles.liveStatusRow}>
@@ -713,7 +714,7 @@ export default function GeneratorScreen() {
               </Text>
               <Text style={styles.liveSubheadline}>
                 Latest draw {latestDrawLabel}
-                {latestDraw?.jackpot ? ` · Jackpot ${latestDraw.jackpot}` : ''}
+                {latestDraw?.jackpot ? ` · Jackpot ${latestDraw?.jackpot}` : ''}
               </Text>
             </>
           )}
@@ -791,20 +792,21 @@ export default function GeneratorScreen() {
             <>
               {latestDraw ? (
                 <View style={styles.latestBallsRow}>
-                  {latestDraw.numbers.map((num) => (
+                  {latestDraw?.numbers.map((num) => (
                     <View key={`latest-${num}`} style={styles.latestBall}>
                       <Text style={styles.latestBallText}>{num}</Text>
                     </View>
                   ))}
                   <Text style={styles.plusText}>+</Text>
                   <View style={[styles.latestBall, styles.latestBonusBall]}>
-                    <Text style={[styles.latestBallText, styles.latestBonusText]}>{latestDraw.bonusNumber}</Text>
+                    <Text style={[styles.latestBallText, styles.latestBonusText]}>{latestDraw?.bonusNumber}</Text>
                   </View>
                 </View>
               ) : null}
             </>
           )}
         </AnimatedCard>
+        ) : null}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Strategy</Text>

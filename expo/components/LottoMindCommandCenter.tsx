@@ -66,8 +66,6 @@ export default function LottoMindCommandCenter({
     currentGame,
     hotNumbers,
     coldNumbers,
-    latestDraw,
-    liveDraws,
     stateName,
     stateGames,
     pickState,
@@ -97,13 +95,6 @@ export default function LottoMindCommandCenter({
     () => getNumbersPreview(coldNumbers, [2, 11, 28, 3, 15]),
     [coldNumbers]
   );
-  const latestDrawDate = latestDraw?.drawDate
-    ? new Date(latestDraw.drawDate).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-      })
-    : 'syncing';
-
   const commandActions: CommandAction[] = [
     {
       title: 'Play Arcade',
@@ -142,7 +133,7 @@ export default function LottoMindCommandCenter({
             <Text style={styles.brandName}>LottoMind™</Text>
             <View style={styles.liveRow}>
               <View style={styles.liveDot} />
-              <Text style={styles.liveText}>Live intelligence</Text>
+              <Text style={styles.liveText}>AI intelligence</Text>
             </View>
           </View>
         </View>
@@ -187,7 +178,7 @@ export default function LottoMindCommandCenter({
           <Text style={styles.heroKicker}>Welcome back, LottoMaster</Text>
           <Text style={styles.heroTitle}>Dream. Analyze. Win.</Text>
           <Text style={styles.heroSub}>
-            A cleaner LottoMind™ command center for picks, live draws, games, credits, and ticket tools.
+            A cleaner LottoMind™ command center for picks, games, credits, and ticket tools.
           </Text>
           <View style={styles.heroButtons}>
             <Pressable style={styles.primaryButton} onPress={() => handleRoute('/powertools')}>
@@ -219,13 +210,13 @@ export default function LottoMindCommandCenter({
         <View style={styles.stateCopy}>
           <Text style={styles.panelLabel}>Active Market</Text>
           <Text style={styles.panelValue}>{stateName}</Text>
-          <Text style={styles.panelHint}>{stateGames.length} games tracked, latest draw {latestDrawDate}</Text>
+          <Text style={styles.panelHint}>{stateGames.length} games tracked in this market</Text>
         </View>
         <StatePicker currentState={pickState} stateName={stateName} onSelect={setPickState} />
       </View>
 
       <View style={styles.statGrid}>
-        <MetricCard icon={Ticket} label="Live Draws" value={`${liveDraws.length}`} accent="#00E5FF" />
+        <MetricCard icon={Ticket} label="Market Games" value={`${stateGames.length}`} accent="#00E5FF" />
         <MetricCard icon={Gauge} label="AI XP" value={`${xp}`} accent={level.color} />
         <MetricCard icon={CircleDollarSign} label="Credits" value={`${totalAvailableCredits}`} accent={Colors.gold} />
         <MetricCard icon={Bell} label="Alerts" value={alertsEnabled ? 'On' : 'Off'} accent="#31F7C8" />
