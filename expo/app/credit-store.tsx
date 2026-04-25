@@ -28,6 +28,7 @@ import {
 import { Colors } from '@/constants/colors';
 import { useMonetization } from '@/providers/MonetizationProvider';
 import { CREDIT_PACKS } from '@/constants/monetization';
+import { RECORD_DROPS, type RecordDrop } from '@/constants/lottomindRecords';
 import AppBackground from '@/components/AppBackground';
 
 type MarketplaceLane = {
@@ -38,15 +39,6 @@ type MarketplaceLane = {
   accent: string;
   icon: React.ComponentType<{ size?: number; color?: string }>;
   route?: string;
-};
-
-type RecordDrop = {
-  title: string;
-  format: string;
-  detail: string;
-  priceCredits: number;
-  accent: string;
-  tags: string[];
 };
 
 const MARKETPLACE_LANES: MarketplaceLane[] = [
@@ -75,33 +67,6 @@ const MARKETPLACE_LANES: MarketplaceLane[] = [
     accent: '#31F7C8',
     icon: Sparkles,
     route: '/powertools',
-  },
-];
-
-const RECORD_DROPS: RecordDrop[] = [
-  {
-    title: 'Vault Run OST',
-    format: 'Arcade soundtrack',
-    detail: 'A jungle-tech chase score built for arcade sessions, trailers, and live promo loops.',
-    priceCredits: 420,
-    accent: '#8A7BFF',
-    tags: ['Arcade', 'Synth', 'Loop Pack'],
-  },
-  {
-    title: 'Oracle Nights',
-    format: 'Focus session',
-    detail: 'Late-night LottoMind ambience for dream study, journaling, and quiet number work.',
-    priceCredits: 260,
-    accent: '#4DD6FF',
-    tags: ['Ambient', 'Dreams', 'Focus'],
-  },
-  {
-    title: 'Lucky Frequency Sessions',
-    format: 'Record drop',
-    detail: 'Branded audio art for promos, lounges, and stream-ready LottoMind showcase reels.',
-    priceCredits: 340,
-    accent: '#F9C74F',
-    tags: ['Promo', 'Branding', 'Live Mix'],
   },
 ];
 

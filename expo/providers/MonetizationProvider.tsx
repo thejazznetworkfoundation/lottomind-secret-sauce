@@ -63,6 +63,7 @@ export interface MonetizationContextValue {
   isFeatureLocked: (featureId: FeatureId) => boolean;
   getCreditSource: (featureId: FeatureId) => 'monthly' | 'purchased' | 'insufficient';
   useFeatureCredits: (featureId: FeatureId) => boolean;
+  spendCredits: (amount: number, reason: string) => boolean;
   subscribeToPlan: (planId: PlanId, cycle: BillingCycle) => void;
   buyCreditPack: (pack: CreditPack) => void;
   unlockFeature: (featureId: FeatureId) => void;
@@ -160,6 +161,26 @@ export const [MonetizationProvider, useMonetization] = createContextHook<Monetiz
     return true;
   }, [getCreditSource, syncData]);
 
+  const spendCredits = useCallback((amount: number, reason: string): boolean => {
+    if (amount <= 0) return true;
+    if (totalAvailableCredits < amount) return false;
+
+    setData(prev => {
+      const availableMonthly = Math.max(0, prev.monthlyCredits - prev.monthlyCreditsUsed);
+      const monthlySpend = Math.min(availableMonthly, amount);
+      const purchasedSpend = amount - monthlySpend;
+      const updated: MonetizationData = {
+        ...prev,
+        monthlyCreditsUsed: prev.monthlyCreditsUsed + monthlySpend,
+        purchasedCredits: Math.max(0, prev.purchasedCredits - purchasedSpend),
+      };
+      syncData.mutate(updated);
+      return updated;
+    });
+    console.log(`[Monetization] Spent ${amount} credits for ${reason}`);
+    return true;
+  }, [syncData, totalAvailableCredits]);
+
   const subscribeToPlan = useCallback((planId: PlanId, cycle: BillingCycle) => {
     const plan = getPlanById(planId);
     if (!plan) return;
@@ -247,6 +268,7 @@ export const [MonetizationProvider, useMonetization] = createContextHook<Monetiz
     isFeatureLocked,
     getCreditSource,
     useFeatureCredits,
+    spendCredits,
     subscribeToPlan,
     buyCreditPack,
     unlockFeature,
@@ -261,7 +283,7 @@ export const [MonetizationProvider, useMonetization] = createContextHook<Monetiz
     currentPlan, monthlyCreditsRemaining, totalAvailableCredits,
     creditUsagePercent, isLowCredits,
     dataQuery.isLoading,
-    canAccessFeature, isFeatureLocked, getCreditSource, useFeatureCredits,
+    canAccessFeature, isFeatureLocked, getCreditSource, useFeatureCredits, spendCredits,
     subscribeToPlan, buyCreditPack, unlockFeature, addPurchasedCredits, watchRewardedAd,
   ]);
 });

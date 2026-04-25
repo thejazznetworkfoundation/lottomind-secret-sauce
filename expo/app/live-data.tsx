@@ -26,6 +26,7 @@ import { useLotto } from '@/providers/LottoProvider';
 import { LiveDraw } from '@/types/lottery';
 import GameSwitcher from '@/components/GameSwitcher';
 import { useQueryClient } from '@tanstack/react-query';
+import { getNewsRadarAlerts } from '@/utils/newsRadar';
 
 function formatDrawDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -61,6 +62,7 @@ export default function LiveDataScreen() {
   const numberStats = useMemo(() => getNumberFrequency(liveDraws, config.mainRange), [liveDraws, config.mainRange]);
   const topHot = useMemo(() => numberStats.slice(0, 5), [numberStats]);
   const topCold = useMemo(() => [...numberStats].sort((a, b) => a.count - b.count).slice(0, 5), [numberStats]);
+  const newsAlerts = useMemo(() => getNewsRadarAlerts(currentGame), [currentGame]);
 
   const bonusStats = useMemo(() => {
     const counts = new Map<number, number>();
@@ -109,6 +111,22 @@ export default function LiveDataScreen() {
         }
       >
         <GameSwitcher currentGame={currentGame} onSwitch={switchGame} />
+
+        <View style={styles.latestCard}>
+          <View style={styles.latestHeader}>
+            <View style={styles.latestBadge}>
+              <Zap size={16} color="#31F7C8" />
+              <Text style={styles.latestBadgeText}>News Radar</Text>
+            </View>
+            <Text style={styles.latestDate}>{newsAlerts.length} alerts</Text>
+          </View>
+          {newsAlerts.slice(0, 3).map((alert) => (
+            <View key={alert.id} style={styles.newsAlertRow}>
+              <Text style={styles.newsAlertTitle}>{alert.title}</Text>
+              <Text style={styles.newsAlertDetail}>{alert.detail}</Text>
+            </View>
+          ))}
+        </View>
 
         {latestDraw && (
           <View style={styles.latestCard}>
@@ -365,6 +383,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     fontWeight: '600' as const,
+  },
+  newsAlertRow: {
+    backgroundColor: 'rgba(49, 247, 200, 0.06)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(49, 247, 200, 0.12)',
+    gap: 4,
+  },
+  newsAlertTitle: {
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '800' as const,
+  },
+  newsAlertDetail: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
   },
   latestBalls: {
     flexDirection: 'row',

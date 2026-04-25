@@ -1,5 +1,6 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import {
+  Alert,
   View,
   Text,
   TextInput,
@@ -12,12 +13,13 @@ import {
   KeyboardAvoidingView,
   Share,
   Image,
+  ImageBackground,
   Linking,
 } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Moon, Sparkles, Eye, Zap, Cloud, TriangleAlert, X, Dice3, Share2, Sun, ChevronRight, Crown, Lock, Play, Video } from 'lucide-react-native';
+import { Moon, Sparkles, Eye, Zap, Cloud, TriangleAlert, X, Dice3, Share2, Sun, ChevronRight, Crown, Lock, Play, Video, Brain, CalendarDays } from 'lucide-react-native';
 import { Video as ExpoVideo, ResizeMode } from 'expo-av';
 import VoiceRecordButton from '@/components/VoiceRecordButton';
 import SpeakButton from '@/components/SpeakButton';
@@ -25,13 +27,21 @@ import { useMutation } from '@tanstack/react-query';
 import { Colors } from '@/constants/colors';
 import AppBackground from '@/components/AppBackground';
 import { useLotto } from '@/providers/LottoProvider';
+import { useMonetization } from '@/providers/MonetizationProvider';
 import { usePro } from '@/providers/ProProvider';
+import { useSettings } from '@/providers/SettingsProvider';
 
 import { useRouter } from 'expo-router';
 import { GAME_CONFIGS } from '@/constants/games';
 import { interpretDream, DreamResult } from '@/utils/dreamInterpreter';
+import { generatePsychicReading } from '@/utils/psychicEngine';
+import { getPsychicFullUnlockExpiresAt, isPsychicFullUnlockActive } from '@/utils/psychicUnlocks';
 import LottoBall from '@/components/LottoBall';
 import GlossyButton from '@/components/GlossyButton';
+
+const dreamOracleBackground = require('@/assets/images/dream-oracle-jungle-bg.png');
+const DREAM_ORACLE_HEADER_VIDEO_URI = '/videos/play-arcade-button-loop.mp4';
+const DREAM_ORACLE_GATE_VIDEO_URI = '/videos/power-tools-dashboard-box.mp4';
 
 const DREAM_PROMPTS = [
   'I was flying over a golden city...',
@@ -40,21 +50,114 @@ const DREAM_PROMPTS = [
   'I saw a rainbow after a storm at the beach...',
 ];
 
-const DISCLAIMER = 'This feature is for entertainment purposes only. Lottery outcomes are random.';
+const DISCLAIMER = 'For entertainment only. Lottery outcomes are random. No reading, prediction, or number suggestion can guarantee a win.';
+const DREAM_FUSION_COST = 25;
+const DREAM_PREMIUM_FEATURES: {
+  title: string;
+  detail: string;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+}[] = [
+  {
+    title: 'AI Psychic Engine',
+    detail: 'Run dream questions through an energy reader with lotto-style number sets.',
+    icon: Brain,
+  },
+  {
+    title: 'Future Read Mode',
+    detail: 'Ask timing questions and turn dream themes into a weekly energy forecast.',
+    icon: CalendarDays,
+  },
+  {
+    title: 'Unlimited Dream History',
+    detail: 'Save every dream reading, symbol, mood, and number set.',
+    icon: Eye,
+  },
+  {
+    title: 'Advanced Symbol Analysis',
+    detail: 'Deeper symbol categories, emotional tone, and repeat themes.',
+    icon: Sparkles,
+  },
+  {
+    title: 'Dream Streak Calendar',
+    detail: 'Track dream-entry streaks and your strongest symbolic days.',
+    icon: Moon,
+  },
+  {
+    title: 'Voice-to-Dream Entry',
+    detail: 'Speak a dream, convert it to text, then run Oracle analysis.',
+    icon: Video,
+  },
+  {
+    title: 'Dream-to-Number Pattern Engine',
+    detail: 'Convert saved symbols into evolving Pick 3, Pick 4, and lotto patterns.',
+    icon: Zap,
+  },
+];
+
+const DREAM_SUITE_ACTIONS: {
+  title: string;
+  detail: string;
+  route: '/psychic' | '/future-read' | '/daily-fortune';
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  accent: string;
+  meta: string;
+}[] = [
+  {
+    title: 'AI Psychic Engine',
+    detail: 'Ask the oracle about a dream, number, date, or lucky window.',
+    route: '/psychic',
+    icon: Brain,
+    accent: '#31F7C8',
+    meta: '1 free/day',
+  },
+  {
+    title: 'Future Read Pro',
+    detail: 'Turn dream energy into a day/week timing forecast.',
+    route: '/future-read',
+    icon: CalendarDays,
+    accent: '#00E5FF',
+    meta: 'Pro depth',
+  },
+  {
+    title: 'Daily Fortune',
+    detail: 'Blend dream mood, signs, and numbers into a quick daily read.',
+    route: '/daily-fortune',
+    icon: Sun,
+    accent: '#FFD700',
+    meta: 'Daily pull',
+  },
+];
+
+function getEnergyDirection(score: number) {
+  if (score >= 72) return 'Upward momentum';
+  if (score >= 45) return 'Balanced and watchful';
+  return 'Cooling - play slowly';
+}
 
 export default function DreamsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { currentGame } = useLotto();
+  const { plan, spendCredits, totalAvailableCredits } = useMonetization();
   const { isPro, canUseDream, freeDreamUsesLeft, useDreamUse, canUseHoroscope, freeHoroscopeUsesLeft } = usePro();
+  const { isPsychicEnabled } = useSettings();
   const config = GAME_CONFIGS[currentGame];
   const [dreamText, setDreamText] = useState<string>('');
   const [result, setResult] = useState<DreamResult | null>(null);
+  const [fusionEnabled, setFusionEnabled] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const horoscopeBlinkAnim = useRef(new Animated.Value(1)).current;
   const interpretBlinkAnim = useRef(new Animated.Value(1)).current;
+  const psychicFusion = useMemo(() => {
+    if (!isPsychicEnabled || !result || !fusionEnabled) return null;
+    return generatePsychicReading({
+      prompt: dreamText,
+      dreamText,
+      game: currentGame,
+    });
+  }, [currentGame, dreamText, fusionEnabled, isPsychicEnabled, result]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -81,6 +184,7 @@ export default function DreamsScreen() {
     onSuccess: (data) => {
       console.log('[DreamsScreen] Dream interpreted successfully');
       setResult(data);
+      setFusionEnabled(false);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 600,
@@ -115,6 +219,7 @@ export default function DreamsScreen() {
     }
 
     setResult(null);
+    setFusionEnabled(false);
     fadeAnim.setValue(0);
 
     if (Platform.OS !== 'web') {
@@ -142,11 +247,44 @@ export default function DreamsScreen() {
   const handleClear = useCallback(() => {
     setDreamText('');
     setResult(null);
+    setFusionEnabled(false);
     fadeAnim.setValue(0);
   }, [fadeAnim]);
 
+  const handlePsychicFusion = useCallback(async () => {
+    if (!isPsychicEnabled) return;
+
+    const unlockExpiresAt = await getPsychicFullUnlockExpiresAt();
+    const hasPremiumFusion = plan === 'pro' || plan === 'vip' || isPsychicFullUnlockActive(unlockExpiresAt);
+
+    if (!hasPremiumFusion) {
+      if (totalAvailableCredits < DREAM_FUSION_COST) {
+        Alert.alert(
+          'Credits needed',
+          `Dream + Psychic Fusion is a premium psychic layer and costs ${DREAM_FUSION_COST} credits.`
+        );
+        return;
+      }
+
+      const charged = spendCredits(DREAM_FUSION_COST, 'Dream + Psychic Fusion');
+      if (!charged) {
+        Alert.alert('Credits needed', `Dream + Psychic Fusion costs ${DREAM_FUSION_COST} credits.`);
+        return;
+      }
+    }
+
+    setFusionEnabled(true);
+  }, [isPsychicEnabled, plan, spendCredits, totalAvailableCredits]);
+
   return (
     <AppBackground style={{ paddingTop: insets.top }}>
+      <ImageBackground
+        source={dreamOracleBackground}
+        resizeMode="cover"
+        style={styles.backgroundImage}
+        imageStyle={styles.backgroundImageStyle}
+      >
+        <View style={styles.backgroundScrim}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -160,6 +298,17 @@ export default function DreamsScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
+            <ExpoVideo
+              source={{ uri: DREAM_ORACLE_HEADER_VIDEO_URI }}
+              style={styles.headerVideo}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay
+              isLooping
+              isMuted
+              useNativeControls={false}
+              pointerEvents="none"
+            />
+            <View style={styles.headerVideoScrim} pointerEvents="none" />
             <View style={styles.titleRow}>
               <Moon size={22} color="#9B8CE8" />
               <Text style={styles.title}>Dream Oracle℠</Text>
@@ -170,25 +319,6 @@ export default function DreamsScreen() {
             <Text style={styles.subtitle}>Describe your dream. AI interprets it into lucky numbers.</Text>
           </View>
 
-          <View style={styles.commercialCard}>
-            <View style={styles.commercialHeader}>
-              <Video size={14} color="#9B8CE8" />
-              <Text style={styles.commercialTitle}>Featured Video</Text>
-            </View>
-            <View style={styles.commercialVideoWrap}>
-              <ExpoVideo
-                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/rf69lfvzqn37d4odtlo8v.mov' }}
-                style={styles.commercialVideo}
-                resizeMode={ResizeMode.CONTAIN}
-                useNativeControls
-                shouldPlay={false}
-                isLooping={false}
-                volume={1.0}
-                isMuted={false}
-              />
-            </View>
-          </View>
-
           {!isPro && (
             <TouchableOpacity
               style={[styles.proGateCard, canUseDream ? styles.proGateCardTrial : undefined]}
@@ -196,6 +326,17 @@ export default function DreamsScreen() {
               activeOpacity={canUseDream ? 1 : 0.85}
               testID="dream-pro-gate"
             >
+              <ExpoVideo
+                source={{ uri: DREAM_ORACLE_GATE_VIDEO_URI }}
+                style={styles.proGateVideo}
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay
+                isLooping
+                isMuted
+                useNativeControls={false}
+                pointerEvents="none"
+              />
+              <View style={styles.proGateVideoScrim} pointerEvents="none" />
               <View style={[styles.proGateIconWrap, canUseDream ? styles.proGateIconWrapTrial : undefined]}>
                 {canUseDream ? <Sparkles size={22} color="#2ECC71" /> : <Crown size={22} color="#FFD700" />}
               </View>
@@ -207,9 +348,94 @@ export default function DreamsScreen() {
                   {canUseDream ? 'Try Dream Oracle\u2120 free before upgrading' : 'Dream Oracle\u2120 requires LottoMind\u2122 Pro'}
                 </Text>
               </View>
-              {!canUseDream && <Lock size={16} color={Colors.textMuted} />}
+              {!canUseDream && (
+                <View style={styles.proGateLockIcon}>
+                  <Lock size={16} color={Colors.textMuted} />
+                </View>
+              )}
             </TouchableOpacity>
           )}
+
+          <View style={styles.premiumSuiteCard}>
+            <View style={styles.premiumSuiteHeader}>
+              <View style={styles.premiumSuiteIcon}>
+                <Crown size={18} color={Colors.gold} />
+              </View>
+              <View style={styles.premiumSuiteCopy}>
+                <Text style={styles.premiumSuiteTitle}>AI Psychic Engine Pro Dream Suite</Text>
+                <Text style={styles.premiumSuiteSub}>
+                  Premium dream tools for psychic readings, future timing, history, streaks, voice capture, and deeper pattern work.
+                </Text>
+              </View>
+              <View style={[styles.premiumStatusPill, isPro && styles.premiumStatusPillActive]}>
+                <Text style={[styles.premiumStatusText, isPro && styles.premiumStatusTextActive]}>
+                  {isPro ? 'ACTIVE' : 'PRO'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.premiumFeatureGrid}>
+              {DREAM_PREMIUM_FEATURES.map((feature) => {
+                const FeatureIcon = feature.icon;
+                return (
+                  <TouchableOpacity
+                    key={feature.title}
+                    style={[styles.premiumFeatureCard, isPro && styles.premiumFeatureCardActive]}
+                    onPress={isPro ? undefined : () => router.push('/paywall')}
+                    activeOpacity={isPro ? 1 : 0.78}
+                  >
+                    <View style={styles.premiumFeatureIcon}>
+                      <FeatureIcon size={16} color={isPro ? '#31F7C8' : Colors.gold} />
+                    </View>
+                    <View style={styles.premiumFeatureCopy}>
+                      <Text style={styles.premiumFeatureTitle}>{feature.title}</Text>
+                      <Text style={styles.premiumFeatureDetail}>{feature.detail}</Text>
+                    </View>
+                    {!isPro ? <Lock size={13} color={Colors.textMuted} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.psychicSuiteActionGrid}>
+              {DREAM_SUITE_ACTIONS.map((action) => {
+                const ActionIcon = action.icon;
+                return (
+                  <TouchableOpacity
+                    key={action.title}
+                    style={[styles.psychicSuiteActionCard, { borderColor: `${action.accent}35` }]}
+                    onPress={() => router.push(action.route)}
+                    activeOpacity={0.84}
+                    testID={`dream-suite-${action.route.slice(1)}`}
+                  >
+                    <View style={[styles.psychicSuiteActionIcon, { backgroundColor: `${action.accent}18`, borderColor: `${action.accent}35` }]}>
+                      <ActionIcon size={17} color={action.accent} />
+                    </View>
+                    <View style={styles.psychicSuiteActionCopy}>
+                      <View style={styles.psychicSuiteActionTop}>
+                        <Text style={styles.psychicSuiteActionTitle}>{action.title}</Text>
+                        <Text style={[styles.psychicSuiteActionMeta, { color: action.accent }]}>{action.meta}</Text>
+                      </View>
+                      <Text style={styles.psychicSuiteActionDetail}>{action.detail}</Text>
+                    </View>
+                    <ChevronRight size={16} color={action.accent} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {!isPro ? (
+              <TouchableOpacity
+                style={styles.premiumUpgradeButton}
+                onPress={() => router.push('/paywall')}
+                activeOpacity={0.84}
+                testID="dream-premium-suite-upgrade"
+              >
+                <Crown size={15} color="#07101F" />
+                <Text style={styles.premiumUpgradeText}>Unlock Dream Suite</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
 
           <Animated.View style={{ opacity: horoscopeBlinkAnim }}>
           <TouchableOpacity
@@ -408,6 +634,90 @@ export default function DreamsScreen() {
                 <Text style={styles.digitPickHint}>3-digit picks</Text>
               </View>
 
+              {isPsychicEnabled && !fusionEnabled ? (
+                <TouchableOpacity
+                  style={styles.psychicFusionButton}
+                  onPress={() => { void handlePsychicFusion(); }}
+                  activeOpacity={0.85}
+                  testID="dream-psychic-fusion-button"
+                >
+                  <Sparkles size={16} color="#FFFFFF" />
+                  <Text style={styles.psychicFusionButtonText}>
+                    {plan === 'pro' || plan === 'vip'
+                      ? 'Add Psychic Fusion'
+                      : `Unlock Dream + Psychic Fusion - ${DREAM_FUSION_COST} Credits`}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {psychicFusion ? (
+                <View style={styles.numbersCard}>
+                  <View style={styles.numbersHeader}>
+                    <Text style={styles.numbersTitle}>Dream + Psychic Fusion</Text>
+                    <View style={styles.gamePill}>
+                      <Text style={styles.gamePillText}>{psychicFusion.luckCycle}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.numbersSubtext}>
+                    Energy direction: {getEnergyDirection(psychicFusion.energyScore)}
+                  </Text>
+                  <View style={styles.fusionMetaGrid}>
+                    <View style={styles.fusionMetaCard}>
+                      <Text style={styles.fusionMetaLabel}>Luck Cycle</Text>
+                      <Text style={styles.fusionMetaValue}>{psychicFusion.luckCycle}</Text>
+                    </View>
+                    <View style={styles.fusionMetaCard}>
+                      <Text style={styles.fusionMetaLabel}>Best Time To Play</Text>
+                      <Text style={styles.fusionMetaValue}>{psychicFusion.bestPlayWindow}</Text>
+                    </View>
+                    <View style={styles.fusionMetaCard}>
+                      <Text style={styles.fusionMetaLabel}>Lucky Color</Text>
+                      <Text style={styles.fusionMetaValue}>{psychicFusion.luckyColor}</Text>
+                    </View>
+                    <View style={styles.fusionMetaCard}>
+                      <Text style={styles.fusionMetaLabel}>Energy Score</Text>
+                      <Text style={styles.fusionMetaValue}>{psychicFusion.energyScore}%</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.numbersSubtext}>
+                    Energy {psychicFusion.energyScore}% · Lucky color {psychicFusion.luckyColor}
+                  </Text>
+                  <Text style={styles.fusionSectionLabel}>{config.name} number inspiration</Text>
+                  <View style={styles.ballsRow}>
+                    {psychicFusion.suggestedNumbers.map((num, index) => (
+                      <LottoBall key={`fusion-main-${num}`} number={num} delay={index * 100} />
+                    ))}
+                    {psychicFusion.bonusNumber ? (
+                      <>
+                        <Text style={styles.plusText}>+</Text>
+                        <LottoBall
+                          number={psychicFusion.bonusNumber}
+                          isBonus
+                          delay={psychicFusion.suggestedNumbers.length * 100}
+                        />
+                      </>
+                    ) : null}
+                  </View>
+                  <Text style={styles.numbersSubtext}>
+                    {psychicFusion.bonusNumber ? `${config.bonusName}: ${psychicFusion.bonusNumber} - ` : ''}
+                    Blended from dream symbols, today's date, and the active game matrix.
+                  </Text>
+
+                  <Text style={styles.fusionSectionLabel}>Pick 3 / Pick 4 sets</Text>
+                  <View style={styles.digitPickNumbers}>
+                    <View style={[styles.digitPickNumWrap, styles.psychicPickWrap]}>
+                      <Text style={styles.fusionPickLabel}>Pick 3</Text>
+                      <Text style={styles.digitPickNum}>{psychicFusion.pick3}</Text>
+                    </View>
+                    <View style={[styles.digitPickNumWrap, styles.psychicPickWrap]}>
+                      <Text style={styles.fusionPickLabel}>Pick 4</Text>
+                      <Text style={styles.digitPickNum}>{psychicFusion.pick4}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.numbersSubtext}>{psychicFusion.explanation}</Text>
+                </View>
+              ) : null}
+
               {result.comboNumbers.length > 0 && (
                 <View style={styles.combosCard}>
                   <View style={styles.combosHeader}>
@@ -469,14 +779,45 @@ export default function DreamsScreen() {
             </Animated.View>
           )}
 
+          <View style={styles.commercialCard}>
+            <View style={styles.commercialHeader}>
+              <Video size={14} color="#9B8CE8" />
+              <Text style={styles.commercialTitle}>Featured Video</Text>
+            </View>
+            <View style={styles.commercialVideoWrap}>
+              <ExpoVideo
+                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/rf69lfvzqn37d4odtlo8v.mov' }}
+                style={styles.commercialVideo}
+                resizeMode={ResizeMode.CONTAIN}
+                useNativeControls
+                shouldPlay={false}
+                isLooping={false}
+                volume={1.0}
+                isMuted={false}
+              />
+            </View>
+          </View>
+
           <View style={{ height: 30 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+        </View>
+      </ImageBackground>
     </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
+  backgroundImageStyle: {
+    opacity: 0.84,
+  },
+  backgroundScrim: {
+    flex: 1,
+    backgroundColor: 'rgba(1, 8, 16, 0.46)',
+  },
   flex: {
     flex: 1,
   },
@@ -489,13 +830,30 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   header: {
+    position: 'relative',
     alignItems: 'center',
     gap: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(2, 10, 22, 0.54)',
+    borderWidth: 1,
+    borderColor: 'rgba(155, 140, 232, 0.18)',
+  },
+  headerVideo: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(3, 8, 18, 0.92)',
+  },
+  headerVideoScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(2, 6, 16, 0.62)',
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    zIndex: 1,
   },
   title: {
     fontSize: 26,
@@ -520,11 +878,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
+    zIndex: 1,
   },
   horoscopeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.86)',
     borderRadius: 16,
     padding: 16,
     gap: 14,
@@ -560,7 +919,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   inputCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.9)',
     borderRadius: 20,
     padding: 16,
     gap: 10,
@@ -630,7 +989,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.86)',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -654,6 +1013,7 @@ const styles = StyleSheet.create({
     gap: 14,
     backgroundColor: 'rgba(255, 215, 0, 0.06)',
     borderRadius: 18,
+    overflow: 'hidden',
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderWidth: 1,
@@ -664,6 +1024,14 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
+  proGateVideo: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(3, 8, 18, 0.92)',
+  },
+  proGateVideoScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(2, 6, 16, 0.58)',
+  },
   proGateIconWrap: {
     width: 42,
     height: 42,
@@ -673,10 +1041,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 215, 0, 0.25)',
+    zIndex: 1,
   },
   proGateInfo: {
     flex: 1,
     gap: 2,
+    zIndex: 1,
   },
   proGateTitle: {
     fontSize: 16,
@@ -699,6 +1069,176 @@ const styles = StyleSheet.create({
   proGateTrialTitle: {
     color: '#2ECC71',
   },
+  proGateLockIcon: {
+    zIndex: 1,
+  },
+  premiumSuiteCard: {
+    backgroundColor: 'rgba(4, 12, 28, 0.88)',
+    borderRadius: 20,
+    padding: 16,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.24)',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  premiumSuiteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  premiumSuiteIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.goldMuted,
+    borderWidth: 1,
+    borderColor: Colors.goldBorder,
+  },
+  premiumSuiteCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  premiumSuiteTitle: {
+    color: Colors.gold,
+    fontSize: 17,
+    fontWeight: '900' as const,
+  },
+  premiumSuiteSub: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '600' as const,
+  },
+  premiumStatusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    borderWidth: 1,
+    borderColor: Colors.goldBorder,
+  },
+  premiumStatusPillActive: {
+    backgroundColor: 'rgba(49, 247, 200, 0.12)',
+    borderColor: 'rgba(49, 247, 200, 0.3)',
+  },
+  premiumStatusText: {
+    color: Colors.gold,
+    fontSize: 10,
+    fontWeight: '900' as const,
+    letterSpacing: 0.8,
+  },
+  premiumStatusTextActive: {
+    color: '#31F7C8',
+  },
+  premiumFeatureGrid: {
+    gap: 9,
+  },
+  premiumFeatureCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: 'rgba(8, 18, 40, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(155, 140, 232, 0.16)',
+  },
+  premiumFeatureCardActive: {
+    borderColor: 'rgba(49, 247, 200, 0.22)',
+    backgroundColor: 'rgba(49, 247, 200, 0.06)',
+  },
+  premiumFeatureIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.18)',
+  },
+  premiumFeatureCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  premiumFeatureTitle: {
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '900' as const,
+  },
+  premiumFeatureDetail: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '600' as const,
+  },
+  psychicSuiteActionGrid: {
+    gap: 10,
+    marginTop: 12,
+  },
+  psychicSuiteActionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.045)',
+    borderWidth: 1,
+  },
+  psychicSuiteActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  psychicSuiteActionCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  psychicSuiteActionTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  psychicSuiteActionTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '900' as const,
+    color: Colors.textPrimary,
+  },
+  psychicSuiteActionMeta: {
+    fontSize: 10,
+    fontWeight: '900' as const,
+    textTransform: 'uppercase' as const,
+  },
+  psychicSuiteActionDetail: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: Colors.textSecondary,
+  },
+  premiumUpgradeButton: {
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: Colors.goldLight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  premiumUpgradeText: {
+    color: '#07101F',
+    fontSize: 14,
+    fontWeight: '900' as const,
+  },
   errorCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -718,7 +1258,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   insightCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.9)',
     borderRadius: 20,
     padding: 18,
     gap: 14,
@@ -802,7 +1342,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   symbolsCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.9)',
     borderRadius: 20,
     padding: 18,
     gap: 12,
@@ -867,7 +1407,7 @@ const styles = StyleSheet.create({
     color: '#C4B5FD',
   },
   numbersCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.9)',
     borderRadius: 20,
     padding: 22,
     alignItems: 'center',
@@ -917,8 +1457,56 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
+  fusionMetaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  fusionMetaCard: {
+    flex: 1,
+    minWidth: '47%' as unknown as number,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.22)',
+    padding: 10,
+    gap: 4,
+  },
+  fusionMetaLabel: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '900' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.45,
+  },
+  fusionMetaValue: {
+    color: '#C4B5FD',
+    fontSize: 13,
+    fontWeight: '900' as const,
+  },
+  fusionSectionLabel: {
+    color: Colors.gold,
+    fontSize: 12,
+    fontWeight: '900' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.6,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  fusionPickLabel: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '900' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.45,
+    marginBottom: 4,
+  },
+  psychicPickWrap: {
+    borderColor: 'rgba(139, 92, 246, 0.22)',
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+  },
   combosCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.9)',
     borderRadius: 20,
     padding: 18,
     gap: 12,
@@ -976,6 +1564,22 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#9B8CE8',
   },
+  psychicFusionButton: {
+    minHeight: 48,
+    borderRadius: 16,
+    backgroundColor: '#8B5CF6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.5)',
+  },
+  psychicFusionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900' as const,
+  },
   disclaimerCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -991,7 +1595,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   digitPickCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.9)',
     borderRadius: 20,
     padding: 16,
     gap: 12,
@@ -1043,7 +1647,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   commercialCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(6, 16, 28, 0.92)',
     borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,

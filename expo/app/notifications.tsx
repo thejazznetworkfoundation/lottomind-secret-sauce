@@ -1,0 +1,1 @@
+export { NotificationsScreen as default } from '@/components/lottomind-ui/screens';

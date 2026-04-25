@@ -9,7 +9,6 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  Image,
   Modal,
   Pressable,
 } from 'react-native';
@@ -23,7 +22,6 @@ import {
   TrendingUp,
   TrendingDown,
   Zap,
-  Heart,
   Radio,
   Brain,
   TriangleAlert,
@@ -78,10 +76,7 @@ import AnimatedCard from '@/components/AnimatedCard';
 import PulsingDot from '@/components/PulsingDot';
 import EmailCollector from '@/components/EmailCollector';
 import LottoMindCommandCenter from '@/components/LottoMindCommandCenter';
-
-
-const DONATION_URL = 'http://thejazznetworkfoundation.org';
-const DONATION_LABEL = 'The Jazz Network Foundation';
+import DailyFortuneDrop from '@/features/psychic/DailyFortuneDrop';
 
 export default function GeneratorScreen() {
   const insets = useSafeAreaInsets();
@@ -120,8 +115,6 @@ export default function GeneratorScreen() {
   const [selectedNosyGame, setSelectedNosyGame] = useState<NosyGame | null>(null);
   const [toolsExpanded, setToolsExpanded] = useState<boolean>(false);
   const [toolsRotateState, setToolsRotateState] = useState<number>(0);
-  const [alertsExpanded, setAlertsExpanded] = useState<boolean>(false);
-  const [alertsRotateState, setAlertsRotateState] = useState<number>(0);
   const buttonScale = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -133,15 +126,6 @@ export default function GeneratorScreen() {
       void Haptics.selectionAsync();
     }
   }, [toolsExpanded]);
-
-  const toggleAlertsDropdown = useCallback(() => {
-    const nextExpanded = !alertsExpanded;
-    setAlertsExpanded(nextExpanded);
-    setAlertsRotateState(nextExpanded ? 1 : 0);
-    if (Platform.OS !== 'web') {
-      void Haptics.selectionAsync();
-    }
-  }, [alertsExpanded]);
 
   const config = GAME_CONFIGS[currentGame];
   const latestDrawLabel = useMemo(() => {
@@ -216,22 +200,6 @@ export default function GeneratorScreen() {
     }
   }, [pickState]);
 
-  const handleDonate = useCallback(async () => {
-    try {
-      if (Platform.OS !== 'web') {
-        void Haptics.selectionAsync();
-      }
-      await WebBrowser.openBrowserAsync(DONATION_URL, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-        controlsColor: '#D4AF37',
-        toolbarColor: '#0A0A0A',
-      });
-    } catch (error) {
-      console.log('Failed to open donation link', error);
-      Alert.alert('Unable to open donation page', 'Please try again in a moment.');
-    }
-  }, []);
-
   const glowOpacity = glowAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0.22, 0.82],
@@ -248,6 +216,8 @@ export default function GeneratorScreen() {
           onHelpPress={() => setHelpMenuOpen(true)}
           onGeneratePress={handleGenerate}
         />
+
+        <DailyFortuneDrop compact />
 
         {false ? (
         <View style={styles.toolsSection}>
@@ -877,133 +847,6 @@ export default function GeneratorScreen() {
           </AnimatedCard>
         ) : null}
 
-
-        <View style={styles.alertsSection}>
-          <TouchableOpacity
-            style={styles.alertsDropdownHeader}
-            onPress={toggleAlertsDropdown}
-            activeOpacity={0.7}
-            testID="alerts-dropdown-toggle"
-          >
-            <View style={styles.alertsDropdownLeft}>
-              <Bell size={18} color="#FFD700" />
-              <Text style={styles.alertsDropdownTitle}>Winning Edge Alerts</Text>
-            </View>
-            <View style={styles.alertsDropdownRight}>
-              <TouchableOpacity
-                onPress={toggleAlerts}
-                style={styles.alertToggleSmall}
-                activeOpacity={0.7}
-                testID="alerts-toggle-btn"
-              >
-                {alertsEnabled ? (
-                  <Bell size={14} color={Colors.gold} />
-                ) : (
-                  <BellOff size={14} color={Colors.textMuted} />
-                )}
-              </TouchableOpacity>
-              <View style={{ transform: [{ rotate: alertsRotateState ? '180deg' : '0deg' }] }}>
-                <ChevronDown size={18} color="#FFD700" />
-              </View>
-            </View>
-          </TouchableOpacity>
-          {alertsExpanded && (
-            <View style={styles.alertsDropdownContent}>
-              <Text style={styles.alertsDropdownSub}>
-                {alertsEnabled ? 'Jackpot spike notifications are ON' : 'Alerts are turned off'}
-              </Text>
-              {jackpots.length > 0 && (
-                <View style={styles.alertsJackpotRow}>
-                  {jackpots.map((jp) => (
-                    <View key={`alert-${jp.game}`} style={[styles.alertJackpotChip, jp.isHuge && styles.alertJackpotChipHuge]}>
-                      <View style={[styles.alertJackpotDot, { backgroundColor: jp.game === 'powerball' ? '#E74C3C' : '#F5A623' }]} />
-                      <Text style={styles.alertJackpotName}>{jp.gameName}</Text>
-                      <View style={styles.alertJackpotAmountRow}>
-                        <DollarSign size={11} color={jp.isHuge ? '#FFD700' : Colors.gold} />
-                        <Text style={[styles.alertJackpotAmount, jp.isHuge && styles.alertJackpotAmountHuge]}>{jp.currentJackpot}</Text>
-                      </View>
-                      {jp.isHuge && (
-                        <View style={styles.alertHugeBadge}>
-                          <Text style={styles.alertHugeBadgeText}>HOT</Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={styles.inviteCard}
-          onPress={() => router.push('/profile')}
-          activeOpacity={0.85}
-          testID="invite-card"
-        >
-          <View style={styles.inviteCardLeft}>
-            <Crown size={20} color="#FFD700" />
-            <View style={styles.inviteCardInfo}>
-              <Text style={styles.inviteCardTitle}>Invite Friends, Earn Rewards</Text>
-              <Text style={styles.inviteCardSub}>+100 XP & +5 credits per invite</Text>
-            </View>
-          </View>
-          <ChevronRight size={18} color="#FFD700" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.creditStoreCard}
-          onPress={() => router.push('/credit-store')}
-          activeOpacity={0.85}
-          testID="credit-store-link"
-        >
-          <View style={styles.inviteCardLeft}>
-            <Zap size={20} color={Colors.gold} />
-            <View style={styles.inviteCardInfo}>
-              <Text style={styles.inviteCardTitle}>Credit Store</Text>
-              <Text style={styles.inviteCardSub}>Buy credit packs or earn free credits</Text>
-            </View>
-          </View>
-          <ChevronRight size={18} color={Colors.gold} />
-        </TouchableOpacity>
-
-        <AnimatedCard style={styles.donateCard} delay={150} depth="medium" glowColor="rgba(212, 175, 55, 0.15)">
-          <View style={styles.donateHeader}>
-            <Image
-              source={require('@/assets/images/jazz-network-logo.jpeg')}
-              style={styles.donateLogo}
-              resizeMode="cover"
-            />
-            <View style={styles.donateCopy}>
-              <Text style={styles.donateTitle}>Support {DONATION_LABEL}</Text>
-              <Text style={styles.donateDescription}>
-                Enjoying the app? Help fund the mission with a quick donation.
-              </Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.donateButton}
-            onPress={() => {
-              void handleDonate();
-            }}
-            activeOpacity={0.85}
-            testID="donate-button"
-          >
-            <Heart size={16} color={Colors.background} fill={Colors.background} />
-            <Text style={styles.donateButtonText}>Donate now</Text>
-          </TouchableOpacity>
-        </AnimatedCard>
-
-        <GlossyButton
-          onPress={() => { void handleBuyTicket(); }}
-          label="Buy Official Tickets"
-          icon={<Ticket size={20} color="#FFFFFF" />}
-          testID="buy-ticket-btn"
-          variant="green"
-          size="medium"
-        />
-
         <View style={{ height: 30 }} />
       </ScrollView>
 
@@ -1513,59 +1356,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800' as const,
     color: '#1A1200',
-  },
-  donateCard: {
-    backgroundColor: 'rgba(8, 18, 40, 0.85)',
-    borderRadius: 18,
-    padding: 18,
-    gap: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 229, 255, 0.2)',
-    shadowColor: '#00E5FF',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  donateHeader: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'flex-start',
-  },
-  donateLogo: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Colors.goldBorder,
-  },
-  donateCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  donateTitle: {
-    fontSize: 16,
-    fontWeight: '800' as const,
-    color: Colors.textPrimary,
-  },
-  donateDescription: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: Colors.textSecondary,
-  },
-  donateButton: {
-    backgroundColor: Colors.gold,
-    borderRadius: 14,
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  donateButtonText: {
-    fontSize: 15,
-    fontWeight: '800' as const,
-    color: Colors.background,
   },
   resultCard: {
     backgroundColor: 'rgba(8, 18, 40, 0.9)',
@@ -2918,21 +2708,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#F5A623',
     fontWeight: '700' as const,
-  },
-  creditStoreCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: 'rgba(8, 18, 40, 0.85)',
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.2)',
-    shadowColor: 'rgba(0, 229, 255, 0.15)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
   },
 });

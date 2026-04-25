@@ -11,7 +11,19 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Grid3x3, X, Flame, Snowflake, Activity, Radio, TrendingUp, TrendingDown, ChevronRight, ChevronDown, Brain } from 'lucide-react-native';
+import {
+  Grid3x3,
+  X,
+  Flame,
+  Snowflake,
+  Activity,
+  Radio,
+  TrendingUp,
+  TrendingDown,
+  ChevronRight,
+  ChevronDown,
+  Brain,
+} from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import AppBackground from '@/components/AppBackground';
 import { GAME_CONFIGS } from '@/constants/games';
@@ -24,6 +36,7 @@ import DailyPick from '@/components/DailyPick';
 import AnimatedCard from '@/components/AnimatedCard';
 import PulsingDot from '@/components/PulsingDot';
 import WinFeed from '@/components/WinFeed';
+import { buildMatrixAwareStats } from '@/utils/matrixAwareStats';
 
 function getHeatColor(normalized: number): string {
   if (normalized > 0.8) return Colors.gold;
@@ -47,6 +60,7 @@ export default function HeatmapScreen() {
     hotNumbers,
     coldNumbers,
     latestDraw,
+    liveDraws,
   } = useLotto();
   const router = useRouter();
   const { isPro } = usePro();
@@ -63,6 +77,10 @@ export default function HeatmapScreen() {
   const hotSet = useMemo(() => new Set(hotNumbers.slice(0, 10)), [hotNumbers]);
   const hottestNumber = hotNumbers.length > 0 ? hotNumbers[0] : null;
   const deadNumbers = useMemo(() => coldNumbers.slice(0, 12), [coldNumbers]);
+  const matrixStats = useMemo(
+    () => buildMatrixAwareStats(currentGame, liveDraws, 'current'),
+    [currentGame, liveDraws]
+  );
 
   const blinkAnim = useRef(new Animated.Value(1)).current;
   const liveDataBlinkAnim = useRef(new Animated.Value(1)).current;
@@ -102,22 +120,6 @@ export default function HeatmapScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity
-          style={styles.intelligenceCard}
-          onPress={() => router.push('/intelligence')}
-          activeOpacity={0.85}
-          testID="heatmap-intelligence"
-        >
-          <View style={styles.intelligenceIcon}>
-            <Brain size={22} color="#8B5CF6" />
-          </View>
-          <View style={styles.intelligenceInfo}>
-            <Text style={styles.intelligenceTitle}>Intelligence Analysis</Text>
-            <Text style={styles.intelligenceSub}>Context-aware pattern analysis & smart picks</Text>
-          </View>
-          <ChevronRight size={18} color="#8B5CF6" />
-        </TouchableOpacity>
-
         <Animated.View style={{ opacity: liveDataBlinkAnim }}>
         <TouchableOpacity
           style={styles.liveDataCard}
@@ -156,6 +158,21 @@ export default function HeatmapScreen() {
         <Text style={styles.subtitle}>
           Frequency + recency intensity for {config.name} from recent live draws
         </Text>
+
+        <AnimatedCard style={styles.infoCard} delay={50} depth="medium" glowColor="rgba(139, 92, 246, 0.18)">
+          <View style={styles.infoRow}>
+            <View style={styles.infoPill}>
+              <Grid3x3 size={14} color={Colors.gold} />
+              <Text style={styles.infoPillText}>Matrix-aware</Text>
+            </View>
+            <View style={styles.infoPill}>
+              <Activity size={14} color={Colors.gold} />
+              <Text style={styles.infoPillText}>{matrixStats.drawingsAnalyzed} draws</Text>
+            </View>
+          </View>
+          <Text style={styles.infoText}>{matrixStats.era.label}</Text>
+          <Text style={styles.infoText}>{matrixStats.summary}</Text>
+        </AnimatedCard>
 
         <GameSwitcher currentGame={currentGame} onSwitch={switchGame} />
 
@@ -321,6 +338,22 @@ export default function HeatmapScreen() {
 
         <DailyPick game={currentGame} onShare={() => {}} />
 
+        <TouchableOpacity
+          style={styles.intelligenceCard}
+          onPress={() => router.push('/intelligence')}
+          activeOpacity={0.85}
+          testID="heatmap-intelligence"
+        >
+          <View style={styles.intelligenceIcon}>
+            <Brain size={22} color="#8B5CF6" />
+          </View>
+          <View style={styles.intelligenceInfo}>
+            <Text style={styles.intelligenceTitle}>Intelligence Analysis</Text>
+            <Text style={styles.intelligenceSub}>Context-aware pattern analysis & smart picks</Text>
+          </View>
+          <ChevronRight size={18} color="#8B5CF6" />
+        </TouchableOpacity>
+
         <View style={{ height: 30 }} />
       </ScrollView>
 
@@ -417,6 +450,130 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: -8,
+  },
+  alertsSection: {
+    gap: 0,
+  },
+  alertsDropdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 215, 0, 0.07)',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.24)',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  alertsDropdownLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  alertsDropdownTitle: {
+    fontSize: 15,
+    fontWeight: '800' as const,
+    color: '#FFD700',
+  },
+  alertsDropdownSub: {
+    marginTop: 2,
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontWeight: '600' as const,
+  },
+  alertsDropdownRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  alertToggleSmall: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.22)',
+  },
+  alertsDropdownContent: {
+    backgroundColor: 'rgba(8, 18, 40, 0.88)',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 8,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.16)',
+  },
+  alertsStatus: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: '600' as const,
+    lineHeight: 17,
+  },
+  alertsJackpotRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  alertJackpotChip: {
+    flex: 1,
+    backgroundColor: 'rgba(10, 20, 45, 0.82)',
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.12)',
+    alignItems: 'center',
+  },
+  alertJackpotChipHuge: {
+    borderColor: 'rgba(255, 215, 0, 0.36)',
+    backgroundColor: 'rgba(255, 215, 0, 0.06)',
+  },
+  alertJackpotDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  alertJackpotName: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  alertJackpotAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  alertJackpotAmount: {
+    fontSize: 15,
+    fontWeight: '800' as const,
+    color: Colors.gold,
+  },
+  alertJackpotAmountHuge: {
+    color: '#FFD700',
+    fontSize: 17,
+  },
+  alertHugeBadge: {
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  alertHugeBadgeText: {
+    fontSize: 9,
+    fontWeight: '800' as const,
+    color: '#FFD700',
+    letterSpacing: 1,
   },
   infoCard: {
     backgroundColor: 'rgba(8, 20, 43, 0.82)',

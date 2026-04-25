@@ -17,9 +17,11 @@ export const heroPoseCrops = {
   run1: { x: 815, y: 26, width: 174, height: 180 },
   run2: { x: 1220, y: 36, width: 168, height: 176 },
   jump: { x: 975, y: 24, width: 188, height: 184 },
+  fall: { x: 678, y: 28, width: 136, height: 182 },
   land: { x: 678, y: 28, width: 136, height: 182 },
   crouch: { x: 889, y: 208, width: 130, height: 176 },
   climb: { x: 145, y: 12, width: 122, height: 230 },
+  swing: { x: 975, y: 24, width: 188, height: 184 },
   hurt: { x: 780, y: 203, width: 130, height: 170 },
   celebrate: { x: 920, y: 206, width: 128, height: 172 },
   jackpotPower: { x: 1038, y: 179, width: 176, height: 196 },
@@ -35,9 +37,11 @@ export const cleanHeroCrops = {
   run1: cleanMascotCrop,
   run2: cleanMascotCrop,
   jump: cleanMascotCrop,
+  fall: cleanMascotCrop,
   land: cleanMascotCrop,
   crouch: cleanMascotCrop,
   climb: cleanMascotCrop,
+  swing: cleanMascotCrop,
   hurt: cleanMascotCrop,
   celebrate: cleanMascotCrop,
   jackpotPower: cleanMascotCrop,
@@ -95,12 +99,16 @@ export function getHeroAnimationPoseKey(animation: HeroAnimationState, elapsed: 
   switch (animation) {
     case "jump":
       return "jump";
+    case "fall":
+      return "fall";
     case "land":
       return "land";
     case "crouch":
       return "crouch";
     case "climb":
       return "climb";
+    case "swing":
+      return "swing";
     case "hurt":
       return "hurt";
     case "celebrate":

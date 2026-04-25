@@ -37,6 +37,9 @@ import {
   Pill,
   Cigarette,
   Newspaper,
+  Bookmark,
+  Trophy,
+  PackageCheck,
 } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import AppBackground from '@/components/AppBackground';
@@ -49,6 +52,11 @@ import {
   type LotteryStoreData,
 } from '@/mocks/lottery-stores';
 import { getStoreOpenStatus, getStatusColor } from '@/utils/storeStatus';
+import {
+  getFavoriteRetailerIds,
+  getRetailerIntelligence,
+  saveFavoriteRetailerIds,
+} from '@/utils/retailerIntelligence';
 
 const US_CENTER: Region = {
   latitude: 39.8283,
@@ -301,7 +309,25 @@ export default function StoreLocatorScreen() {
   const [showStatePicker, setShowStatePicker] = useState<boolean>(false);
   const [storeTypeFilter, setStoreTypeFilter] = useState<LotteryStoreData['type'] | null>(null);
   const [openNowFilter, setOpenNowFilter] = useState<boolean>(false);
+  const [favoritesOnlyFilter, setFavoritesOnlyFilter] = useState<boolean>(false);
+  const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
   const selectedAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let mounted = true;
+
+    getFavoriteRetailerIds()
+      .then((ids) => {
+        if (mounted) {
+          setFavoriteStoreIds(ids);
+        }
+      })
+      .catch((error) => console.log('[StoreLocator] Favorite load error', error));
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const baseStores = useMemo(() => {
     if (selectedState) {
@@ -318,30 +344,65 @@ export default function StoreLocatorScreen() {
     if (openNowFilter) {
       stores = stores.filter((s) => getStoreOpenStatus(s.hours).isOpen);
     }
-    if (userLocation) {
-      return stores
-        .map((store) => {
-          const dist = getDistanceMiles(userLocation.lat, userLocation.lng, store.lat, store.lng);
-          return { ...store, distance: `${dist.toFixed(1)} mi` };
-        })
-        .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+    if (favoritesOnlyFilter) {
+      stores = stores.filter((s) => favoriteStoreIds.includes(s.id));
     }
-    return stores.map((s) => ({ ...s, distance: '--' }));
-  }, [userLocation, baseStores, storeTypeFilter, openNowFilter]);
+    const storesWithMiles = stores.map((store) => {
+      if (!userLocation) return { ...store, distance: '--' };
+      const dist = getDistanceMiles(userLocation.lat, userLocation.lng, store.lat, store.lng);
+      return { ...store, distance: `${dist.toFixed(1)} mi` };
+    });
+
+    return storesWithMiles.sort((a, b) => {
+      const favoriteRank =
+        Number(favoriteStoreIds.includes(b.id)) - Number(favoriteStoreIds.includes(a.id));
+      if (favoriteRank !== 0) return favoriteRank;
+      if (userLocation) return parseFloat(a.distance) - parseFloat(b.distance);
+      return getRetailerIntelligence(b).retailerScore - getRetailerIntelligence(a).retailerScore;
+    });
+  }, [userLocation, baseStores, storeTypeFilter, openNowFilter, favoritesOnlyFilter, favoriteStoreIds]);
 
   const filteredStores = useMemo(() => {
     if (!searchQuery.trim()) return storesWithDistance;
     const q = searchQuery.toLowerCase();
     return storesWithDistance.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.address.toLowerCase().includes(q) ||
-        s.city.toLowerCase().includes(q) ||
-        s.state.toLowerCase().includes(q) ||
-        s.stateCode.toLowerCase().includes(q) ||
-        s.games.some((g) => g.toLowerCase().includes(q))
+      (s) => {
+        const intelligence = getRetailerIntelligence(s);
+        return (
+          s.name.toLowerCase().includes(q) ||
+          s.address.toLowerCase().includes(q) ||
+          s.city.toLowerCase().includes(q) ||
+          s.state.toLowerCase().includes(q) ||
+          s.stateCode.toLowerCase().includes(q) ||
+          s.games.some((g) => g.toLowerCase().includes(q)) ||
+          intelligence.scratcherStockConfidence.toLowerCase().includes(q) ||
+          intelligence.scratchersLikelyInStock.some((item) => item.toLowerCase().includes(q)) ||
+          intelligence.bestFor.some((item) => item.toLowerCase().includes(q)) ||
+          (favoriteStoreIds.includes(s.id) && 'favorite saved'.includes(q))
+        );
+      }
     );
-  }, [searchQuery, storesWithDistance]);
+  }, [searchQuery, storesWithDistance, favoriteStoreIds]);
+
+  const retailerHighlights = useMemo(() => {
+    const enriched = filteredStores.map((store) => ({
+      store,
+      intelligence: getRetailerIntelligence(store),
+    }));
+    const sortedByScore = [...enriched].sort(
+      (a, b) => b.intelligence.retailerScore - a.intelligence.retailerScore
+    );
+    const topPrize = sortedByScore.find((item) => item.intelligence.topPrizeSellerSignal) ?? sortedByScore[0];
+    const highStockCount = enriched.filter(
+      (item) => item.intelligence.scratcherStockConfidence === 'High'
+    ).length;
+
+    return {
+      topPrize,
+      highStockCount,
+      favoriteCount: favoriteStoreIds.length,
+    };
+  }, [filteredStores, favoriteStoreIds.length]);
 
   useEffect(() => {
     if (selectedStore) {
@@ -406,6 +467,16 @@ export default function StoreLocatorScreen() {
     }
     void Linking.openURL(`tel:${cleaned}`).catch(() => {
       Alert.alert('Unable to make call', phone);
+    });
+  }, []);
+
+  const handleToggleFavorite = useCallback((storeId: string) => {
+    setFavoriteStoreIds((prev) => {
+      const next = prev.includes(storeId)
+        ? prev.filter((id) => id !== storeId)
+        : [storeId, ...prev];
+      void saveFavoriteRetailerIds(next);
+      return next;
     });
   }, []);
 
@@ -506,11 +577,16 @@ export default function StoreLocatorScreen() {
     'newsstand',
   ];
 
+  const selectedIntelligence = selectedStore ? getRetailerIntelligence(selectedStore) : null;
+  const selectedIsFavorite = selectedStore ? favoriteStoreIds.includes(selectedStore.id) : false;
+
   const renderStoreCard = useCallback(
     ({ item }: { item: LotteryStoreData & { distance: string } }) => {
       const isSelected = selectedStore?.id === item.id;
+      const isFavorite = favoriteStoreIds.includes(item.id);
       const status = getStoreOpenStatus(item.hours);
       const statusColor = getStatusColor(status.urgency);
+      const intelligence = getRetailerIntelligence(item);
       return (
         <TouchableOpacity
           style={[styles.storeCard, isSelected && styles.storeCardSelected]}
@@ -538,7 +614,33 @@ export default function StoreLocatorScreen() {
                   <Text style={[styles.statusText, { color: statusColor }]}>{status.label}</Text>
                 </View>
               </View>
+              <View style={styles.intelligenceRow}>
+                {isFavorite && (
+                  <View style={styles.signalPill}>
+                    <Bookmark size={10} color={Colors.gold} fill={Colors.gold} />
+                    <Text style={styles.signalText}>Saved</Text>
+                  </View>
+                )}
+                {intelligence.topPrizeSellerSignal && (
+                  <View style={styles.signalPill}>
+                    <Trophy size={10} color={Colors.gold} />
+                    <Text style={styles.signalText}>Top-prize seller nearby</Text>
+                  </View>
+                )}
+                <View style={styles.signalPillMuted}>
+                  <PackageCheck size={10} color="#00E676" />
+                  <Text style={styles.signalTextMuted}>
+                    {intelligence.scratcherStockConfidence} stock signal
+                  </Text>
+                </View>
+              </View>
             </View>
+          </View>
+
+          <View style={styles.stockPanel}>
+            <Text style={styles.stockTitle}>Likely scratchers in stock</Text>
+            <Text style={styles.stockText}>{intelligence.scratchersLikelyInStock.join(' / ')}</Text>
+            <Text style={styles.stockNoteText}>{intelligence.bestFor.join(' | ')}</Text>
           </View>
 
           <View style={styles.storeGames}>
@@ -555,6 +657,15 @@ export default function StoreLocatorScreen() {
           </View>
 
           <View style={styles.storeActions}>
+            <TouchableOpacity
+              style={[styles.storeActionBtn, isFavorite && styles.favoriteActionActive]}
+              onPress={() => handleToggleFavorite(item.id)}
+            >
+              <Bookmark size={13} color={isFavorite ? '#0A0A0A' : Colors.gold} fill={isFavorite ? '#0A0A0A' : 'transparent'} />
+              <Text style={[styles.storeActionText, isFavorite && styles.favoriteActionText]}>
+                {isFavorite ? 'Saved' : 'Save'}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.storeActionBtn}
               onPress={() => handleGetDirections(item)}
@@ -573,7 +684,7 @@ export default function StoreLocatorScreen() {
         </TouchableOpacity>
       );
     },
-    [selectedStore, handleSelectStore, handleGetDirections, handleCall]
+    [selectedStore, favoriteStoreIds, handleSelectStore, handleToggleFavorite, handleGetDirections, handleCall]
   );
 
   return (
@@ -585,7 +696,7 @@ export default function StoreLocatorScreen() {
           <ChevronLeft size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
         <MapPin size={18} color={Colors.gold} />
-        <Text style={styles.headerTitle}>US Lottery Stores</Text>
+        <Text style={styles.headerTitle}>Retailer Intelligence</Text>
         <TouchableOpacity
           style={styles.locateBtn}
           onPress={handleLocateMe}
@@ -649,6 +760,20 @@ export default function StoreLocatorScreen() {
           <Clock size={12} color={openNowFilter ? '#0A0A0A' : '#00E676'} />
           <Text style={[styles.typeChipText, openNowFilter && styles.openNowChipTextActive]}>Open Now</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.typeChip, favoritesOnlyFilter && styles.favoriteChipActive]}
+          onPress={() => setFavoritesOnlyFilter(prev => !prev)}
+          activeOpacity={0.7}
+        >
+          <Bookmark
+            size={12}
+            color={favoritesOnlyFilter ? '#0A0A0A' : Colors.gold}
+            fill={favoritesOnlyFilter ? '#0A0A0A' : 'transparent'}
+          />
+          <Text style={[styles.typeChipText, favoritesOnlyFilter && styles.favoriteChipTextActive]}>
+            Favorites
+          </Text>
+        </TouchableOpacity>
         {storeTypeOptions.map((type) => {
           const isActive = storeTypeFilter === type;
           return (
@@ -672,6 +797,41 @@ export default function StoreLocatorScreen() {
           );
         })}
       </ScrollView>
+
+      <View style={styles.intelligenceCard}>
+        <View style={styles.intelligenceHeader}>
+          <View>
+            <Text style={styles.intelligenceTitle}>Retailer Intelligence</Text>
+            <Text style={styles.intelligenceSubtitle}>
+              Favorites, route-ready stops, scratcher stock signals, and top-prize seller clues.
+            </Text>
+          </View>
+          <Trophy size={20} color={Colors.gold} />
+        </View>
+
+        <View style={styles.intelligenceGrid}>
+          <View style={styles.intelligenceMetric}>
+            <Text style={styles.intelligenceMetricValue}>{retailerHighlights.favoriteCount}</Text>
+            <Text style={styles.intelligenceMetricLabel}>Favorites</Text>
+          </View>
+          <View style={styles.intelligenceMetric}>
+            <Text style={styles.intelligenceMetricValue}>{retailerHighlights.highStockCount}</Text>
+            <Text style={styles.intelligenceMetricLabel}>High stock</Text>
+          </View>
+          <View style={styles.intelligenceMetricWide}>
+            <Text style={styles.insightTitle}>Top nearby signal</Text>
+            <Text style={styles.insightBody} numberOfLines={2}>
+              {retailerHighlights.topPrize
+                ? `${retailerHighlights.topPrize.store.name} - ${retailerHighlights.topPrize.intelligence.retailerScore}/100`
+                : 'Pick a state or location to surface a top retailer signal.'}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.safetyNote}>
+          Inventory and seller signals are informational estimates. Confirm scratcher stock and services before you go.
+        </Text>
+      </View>
 
       <View style={styles.mapContainer}>
         {Platform.OS === 'web' ? (
@@ -796,7 +956,42 @@ export default function StoreLocatorScreen() {
               </View>
             ))}
           </View>
+          {selectedIntelligence && (
+            <View style={styles.selectedIntelPanel}>
+              <View style={styles.intelligenceRow}>
+                {selectedIntelligence.topPrizeSellerSignal && (
+                  <View style={styles.signalPill}>
+                    <Trophy size={10} color={Colors.gold} />
+                    <Text style={styles.signalText}>Top-prize seller nearby</Text>
+                  </View>
+                )}
+                <View style={styles.signalPillMuted}>
+                  <PackageCheck size={10} color="#00E676" />
+                  <Text style={styles.signalTextMuted}>
+                    {selectedIntelligence.scratcherStockConfidence} stock signal
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.stockText}>
+                Likely in stock: {selectedIntelligence.scratchersLikelyInStock.join(' / ')}
+              </Text>
+              <Text style={styles.stockNoteText}>{selectedIntelligence.routeHint}</Text>
+            </View>
+          )}
           <View style={styles.selectedActions}>
+            <TouchableOpacity
+              style={[styles.actionBtn, selectedIsFavorite && styles.favoriteActionActive]}
+              onPress={() => handleToggleFavorite(selectedStore.id)}
+            >
+              <Bookmark
+                size={14}
+                color={selectedIsFavorite ? '#0A0A0A' : Colors.gold}
+                fill={selectedIsFavorite ? '#0A0A0A' : 'transparent'}
+              />
+              <Text style={[styles.actionBtnText, selectedIsFavorite && styles.favoriteActionText]}>
+                {selectedIsFavorite ? 'Saved' : 'Favorite'}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}
               onPress={() => handleGetDirections(selectedStore)}
@@ -1158,6 +1353,7 @@ const styles = StyleSheet.create({
   selectedActions: {
     flexDirection: 'row',
     gap: 10,
+    flexWrap: 'wrap',
   },
   actionBtn: {
     flex: 1,
@@ -1273,6 +1469,91 @@ const styles = StyleSheet.create({
     color: '#0A0A0A',
     fontWeight: '700' as const,
   },
+  favoriteChipActive: {
+    backgroundColor: Colors.gold,
+    borderColor: Colors.gold,
+  },
+  favoriteChipTextActive: {
+    color: '#0A0A0A',
+    fontWeight: '700' as const,
+  },
+  intelligenceCard: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(20, 14, 30, 0.92)',
+    borderWidth: 1,
+    borderColor: Colors.goldBorder,
+    gap: 12,
+  },
+  intelligenceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  intelligenceTitle: {
+    fontSize: 16,
+    fontWeight: '800' as const,
+    color: Colors.gold,
+  },
+  intelligenceSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  intelligenceGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  intelligenceMetric: {
+    width: 76,
+    borderRadius: 12,
+    padding: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  intelligenceMetricWide: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  intelligenceMetricValue: {
+    fontSize: 20,
+    fontWeight: '900' as const,
+    color: Colors.gold,
+  },
+  intelligenceMetricLabel: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  insightTitle: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: Colors.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.4,
+  },
+  insightBody: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    lineHeight: 17,
+    marginTop: 4,
+  },
+  safetyNote: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    lineHeight: 16,
+  },
   storeGames: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1294,6 +1575,7 @@ const styles = StyleSheet.create({
   storeActions: {
     flexDirection: 'row',
     gap: 8,
+    flexWrap: 'wrap',
   },
   storeActionBtn: {
     flexDirection: 'row',
@@ -1310,6 +1592,86 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600' as const,
     color: Colors.textSecondary,
+  },
+  favoriteActionActive: {
+    backgroundColor: Colors.gold,
+    borderColor: Colors.gold,
+  },
+  favoriteActionText: {
+    color: '#0A0A0A',
+    fontWeight: '800' as const,
+  },
+  intelligenceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+    marginTop: 5,
+  },
+  signalPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: Colors.goldMuted,
+    borderWidth: 1,
+    borderColor: Colors.goldBorder,
+  },
+  signalPillMuted: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 230, 118, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 230, 118, 0.18)',
+  },
+  signalText: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: Colors.gold,
+  },
+  signalTextMuted: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: '#00E676',
+  },
+  stockPanel: {
+    borderRadius: 12,
+    padding: 10,
+    backgroundColor: 'rgba(212, 175, 55, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    gap: 3,
+  },
+  selectedIntelPanel: {
+    borderRadius: 12,
+    padding: 10,
+    backgroundColor: 'rgba(212, 175, 55, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    gap: 5,
+  },
+  stockTitle: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: Colors.gold,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.35,
+  },
+  stockText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    lineHeight: 17,
+  },
+  stockNoteText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    lineHeight: 15,
   },
   emptyState: {
     alignItems: 'center',

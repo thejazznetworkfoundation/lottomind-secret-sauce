@@ -93,6 +93,10 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Clock color={color} size={size} />,
         }}
       />
+      <Tabs.Screen name="games" options={{ href: null }} />
+      <Tabs.Screen name="tools" options={{ href: null }} />
+      <Tabs.Screen name="wallet" options={{ href: null }} />
+      <Tabs.Screen name="more" options={{ href: null }} />
     </Tabs>
   );
 }

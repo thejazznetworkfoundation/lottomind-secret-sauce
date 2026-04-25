@@ -414,26 +414,19 @@ export function StageRenderer({ stage, snapshot }: StageRendererProps) {
         ))}
 
         {visibleLadders.map((ladder) => (
-          <View
+          <ArcadeSprite
             key={ladder.id}
-            style={[
-              styles.ladder,
-              {
-                left: ladder.x - snapshot.cameraX,
-                top: ladder.y,
-                width: ladder.width,
-                height: ladder.height,
-              },
-            ]}
-          >
-            <View style={[styles.ladderRail, { left: 8 }]} />
-            <View style={[styles.ladderRail, { right: 8 }]} />
-            {Array.from({ length: ladder.rungCount }, (_, index) => {
-              const rungTop = (index / Math.max(1, ladder.rungCount - 1)) * (ladder.height - 10);
-
-              return <View key={`${ladder.id}-${index}`} style={[styles.ladderRung, { top: rungTop }]} />;
-            })}
-          </View>
+            asset={arcadeSceneArt.ladder}
+            x={ladder.x - snapshot.cameraX - 12}
+            y={ladder.y - 8}
+            width={ladder.width + 24}
+            height={ladder.height + 16}
+            zIndex={4}
+            glowColor="#D4AF37"
+            depthOffsetX={-5}
+            depthOffsetY={8}
+            depthOpacity={0.14}
+          />
         ))}
 
         {visiblePickups.map((pickup, index) => {

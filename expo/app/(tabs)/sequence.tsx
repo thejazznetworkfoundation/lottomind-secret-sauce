@@ -8,18 +8,22 @@ import {
   ScrollView,
   Animated,
   Platform,
+  Image,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Activity, Layers, Zap, ChevronRight, TriangleAlert, Plus, Minus, Waves, ScanLine, Gauge, Sparkles, Check, Brain, HelpCircle, ChevronDown, Play } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import AppBackground from '@/components/AppBackground';
 import GlossyButton from '@/components/GlossyButton';
 import { generateDreamSequence, DreamSequenceResult, EngineMode } from '@/utils/dreamSequence';
 import SpeakButton from '@/components/SpeakButton';
+
+const sequenceEngineBackground = require('@/assets/images/sequence-engine-live-bg.png');
 
 const PRESET_SEQUENCES = [
   { label: 'Classic Rise', numbers: [12, 18, 47, 56, 63] },
@@ -161,6 +165,17 @@ export default function SequenceScreen() {
 
   return (
     <AppBackground style={{ paddingTop: insets.top }}>
+      <ImageBackground
+        source={sequenceEngineBackground}
+        resizeMode="cover"
+        style={styles.backgroundImage}
+        imageStyle={styles.backgroundImageStyle}
+      >
+        <LinearGradient
+          colors={['rgba(1, 7, 14, 0.88)', 'rgba(3, 13, 24, 0.78)', 'rgba(1, 6, 14, 0.94)']}
+          locations={[0, 0.46, 1]}
+          style={styles.backgroundScrim}
+        >
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
@@ -529,11 +544,22 @@ export default function SequenceScreen() {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+        </LinearGradient>
+      </ImageBackground>
     </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
+  backgroundImageStyle: {
+    opacity: 0.72,
+  },
+  backgroundScrim: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -549,6 +575,12 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: 4,
+    borderRadius: 22,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(1, 8, 18, 0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(125, 232, 255, 0.18)',
   },
   titleRow: {
     flexDirection: 'row',
@@ -621,7 +653,7 @@ const styles = StyleSheet.create({
   engineCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.9)',
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
@@ -667,7 +699,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   inputCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.92)',
     borderRadius: 20,
     padding: 16,
     gap: 10,
@@ -714,7 +746,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   presetChip: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.9)',
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -734,7 +766,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'] as any,
   },
   modifierCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.92)',
     borderRadius: 20,
     padding: 16,
     gap: 12,
@@ -815,7 +847,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   patternCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.94)',
     borderRadius: 20,
     padding: 18,
     gap: 12,
@@ -898,7 +930,7 @@ const styles = StyleSheet.create({
     color: '#E67E22',
   },
   sequenceCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.94)',
     borderRadius: 20,
     padding: 18,
     gap: 14,
@@ -949,7 +981,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'] as any,
   },
   modifiedCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.94)',
     borderRadius: 20,
     padding: 18,
     gap: 14,
@@ -996,7 +1028,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'] as any,
   },
   hotZoneCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.94)',
     borderRadius: 20,
     padding: 18,
     gap: 12,
@@ -1055,7 +1087,7 @@ const styles = StyleSheet.create({
   intelligenceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.94)',
     borderRadius: 16,
     padding: 16,
     gap: 14,
@@ -1087,7 +1119,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   commercialCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.94)',
     borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
@@ -1157,7 +1189,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(230, 126, 34, 0.3)',
   },
   helpDropdown: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(3, 10, 22, 0.96)',
     borderRadius: 18,
     padding: 18,
     gap: 14,
@@ -1189,7 +1221,7 @@ const styles = StyleSheet.create({
   lottomindCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.goldMuted,
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
     borderRadius: 14,
     padding: 12,
     gap: 12,

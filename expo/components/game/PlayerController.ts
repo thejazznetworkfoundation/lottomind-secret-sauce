@@ -19,7 +19,7 @@ function getAnimationState(player: PlayerEntity, input: ArcadeInputState): HeroA
   }
 
   if (!player.onGround) {
-    return "jump";
+    return player.velocity.y > 120 ? "fall" : "jump";
   }
 
   if (player.landTimer > 0) {

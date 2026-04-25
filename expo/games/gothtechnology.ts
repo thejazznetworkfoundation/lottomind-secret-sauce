@@ -5,7 +5,7 @@ export const gothtechnologyGame: WebArcadeGameCatalogEntry = {
   kind: "web",
   title: "Gothtechnology",
   subtitle: "Neon Run-And-Gun",
-  description: "A mobile-friendly neon target rush using the Gothtechnology arcade theme and custom hero art.",
+  description: "Updated sprite-run cabinet with animated hero frames, pickup art, mobile controls, and a cathedral-core finale.",
   categoryId: "mind-credits",
   categoryLabel: "Mind Credits",
   accentColor: "#c76cff",

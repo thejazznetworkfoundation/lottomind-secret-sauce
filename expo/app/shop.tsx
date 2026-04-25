@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import {
   ArrowLeft,
@@ -25,15 +26,75 @@ import {
   ShoppingBag,
   Sparkles,
   Tag,
+  Coins,
 } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import AppBackground from '@/components/AppBackground';
 import { EBOOKS, TSHIRTS, type EBook, type TShirt } from '@/mocks/shopData';
+import { useMonetization } from '@/providers/MonetizationProvider';
 
-type ShopTab = 'ebooks' | 'merch';
+type ShopTab = 'merch' | 'ebooks';
+const EBOOK_REWARD_PREFIX = 'lottomind_ebook_download_rewarded_';
+const MERCH_CREDITS_PER_DOLLAR = 25;
+const MERCH_CREDIT_DISCOUNT = 0.9;
+const MERCH_CASH_REWARD_RATE = 0.1;
 
-function EBookCard({ book }: { book: EBook }) {
+function parseCashPrice(price: string): number {
+  const numeric = Number(price.replace(/[^0-9.]/g, ''));
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function getMerchCreditCost(price: string): number {
+  return Math.max(1, Math.round(parseCashPrice(price) * MERCH_CREDITS_PER_DOLLAR * MERCH_CREDIT_DISCOUNT));
+}
+
+function getMerchCashReward(price: string): number {
+  return Math.max(1, Math.round(parseCashPrice(price) * MERCH_CREDITS_PER_DOLLAR * MERCH_CASH_REWARD_RATE));
+}
+
+function getDownloadUrl(downloadUrl: string): string {
+  if (Platform.OS === 'web' && downloadUrl.startsWith('/') && typeof globalThis.location !== 'undefined') {
+    return `${globalThis.location.origin}${downloadUrl}`;
+  }
+  return downloadUrl;
+}
+
+function EBookCard({
+  book,
+  onRewardCredits,
+}: {
+  book: EBook;
+  onRewardCredits: (amount: number) => void;
+}) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [hasEarnedReward, setHasEarnedReward] = useState(!book.creditReward);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!book.creditReward) {
+      setHasEarnedReward(true);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    AsyncStorage.getItem(`${EBOOK_REWARD_PREFIX}${book.id}`)
+      .then((value) => {
+        if (isMounted) {
+          setHasEarnedReward(value === 'true');
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setHasEarnedReward(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [book.creditReward, book.id]);
 
   const handlePress = useCallback(async () => {
     Animated.sequence([
@@ -46,11 +107,25 @@ function EBookCard({ book }: { book: EBook }) {
     }
 
     try {
-      await Linking.openURL(book.downloadUrl);
+      if (book.creditReward && !hasEarnedReward) {
+        onRewardCredits(book.creditReward);
+        setHasEarnedReward(true);
+        await AsyncStorage.setItem(`${EBOOK_REWARD_PREFIX}${book.id}`, 'true');
+        Alert.alert('Credits Earned', `Downloaded ${book.title} and earned +${book.creditReward} LottoMind Credits.`);
+      }
+
+      const downloadUrl = getDownloadUrl(book.downloadUrl);
+      await Linking.openURL(downloadUrl);
     } catch {
       Alert.alert('Download Error', 'Unable to open the download link. Please try again.');
     }
-  }, [book.downloadUrl, scaleAnim]);
+  }, [book.creditReward, book.downloadUrl, book.id, book.title, hasEarnedReward, onRewardCredits, scaleAnim]);
+
+  const rewardLabel = book.creditReward
+    ? hasEarnedReward
+      ? 'Reward claimed'
+      : `Earn +${book.creditReward} cr`
+    : null;
 
   return (
     <Animated.View style={[styles.ebookCard, { transform: [{ scale: scaleAnim }] }]}>
@@ -86,6 +161,14 @@ function EBookCard({ book }: { book: EBook }) {
             <Text style={styles.ebookPrice}>{book.price}</Text>
           </View>
         </View>
+        {rewardLabel ? (
+          <View style={[styles.ebookRewardBadge, hasEarnedReward && styles.ebookRewardBadgeClaimed]}>
+            <Coins size={12} color={hasEarnedReward ? Colors.textMuted : '#FFD700'} />
+            <Text style={[styles.ebookRewardText, hasEarnedReward && styles.ebookRewardTextClaimed]}>
+              {rewardLabel}
+            </Text>
+          </View>
+        ) : null}
         <TouchableOpacity
           style={styles.downloadBtn}
           onPress={handlePress}
@@ -93,17 +176,32 @@ function EBookCard({ book }: { book: EBook }) {
           testID={`ebook-download-${book.id}`}
         >
           <Download size={14} color="#1A1200" />
-          <Text style={styles.downloadBtnText}>Download PDF</Text>
+          <Text style={styles.downloadBtnText}>
+            {book.creditReward && !hasEarnedReward ? `Download PDF +${book.creditReward} cr` : 'Download PDF'}
+          </Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
   );
 }
 
-function TShirtCard({ shirt }: { shirt: TShirt }) {
+function TShirtCard({
+  shirt,
+  totalAvailableCredits,
+  onCashReward,
+  onSpendCredits,
+}: {
+  shirt: TShirt;
+  totalAvailableCredits: number;
+  onCashReward: (amount: number) => void;
+  onSpendCredits: (amount: number, reason: string) => boolean;
+}) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const creditCost = getMerchCreditCost(shirt.price);
+  const cashRewardCredits = getMerchCashReward(shirt.price);
+  const canBuyWithCredits = totalAvailableCredits >= creditCost;
 
-  const handlePress = useCallback(async () => {
+  const handleCashPress = useCallback(async () => {
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
@@ -114,11 +212,31 @@ function TShirtCard({ shirt }: { shirt: TShirt }) {
     }
 
     try {
+      onCashReward(cashRewardCredits);
       await Linking.openURL(shirt.purchaseUrl);
     } catch {
       Alert.alert('Shop Error', 'Unable to open the store link. Please try again.');
     }
-  }, [shirt.purchaseUrl, scaleAnim]);
+  }, [cashRewardCredits, onCashReward, shirt.purchaseUrl, scaleAnim]);
+
+  const handleCreditPress = useCallback(() => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, { toValue: 0.96, duration: 80, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+
+    if (Platform.OS !== 'web') {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }
+
+    const paid = onSpendCredits(creditCost, `${shirt.name} merch purchase`);
+    if (!paid) {
+      Alert.alert('More Credits Needed', `${shirt.name} takes ${creditCost} credits. You have ${totalAvailableCredits}.`);
+      return;
+    }
+
+    Alert.alert('Merch Bought With Credits', `${creditCost} credits were used for ${shirt.name}.`);
+  }, [creditCost, onSpendCredits, scaleAnim, shirt.name, totalAvailableCredits]);
 
   return (
     <Animated.View style={[styles.shirtCard, { transform: [{ scale: scaleAnim }] }]}>
@@ -159,16 +277,38 @@ function TShirtCard({ shirt }: { shirt: TShirt }) {
             </View>
           ))}
         </View>
+        <View style={styles.merchPriceGrid}>
+          <View style={styles.merchPriceBox}>
+            <Text style={styles.merchPriceLabel}>Cash</Text>
+            <Text style={styles.shirtPrice}>{shirt.price}</Text>
+            <Text style={styles.cashRewardText}>Earn +{cashRewardCredits} cr</Text>
+          </View>
+          <View style={[styles.merchPriceBox, styles.creditPriceBox]}>
+            <Text style={styles.merchPriceLabel}>Credits</Text>
+            <Text style={styles.creditPrice}>{creditCost} cr</Text>
+            <Text style={styles.creditDiscountText}>10% less value</Text>
+          </View>
+        </View>
         <View style={styles.shirtFooter}>
-          <Text style={styles.shirtPrice}>{shirt.price}</Text>
           <TouchableOpacity
             style={styles.buyBtn}
-            onPress={handlePress}
+            onPress={handleCashPress}
             activeOpacity={0.8}
             testID={`shirt-buy-${shirt.id}`}
           >
             <ShoppingBag size={14} color="#1A1200" />
-            <Text style={styles.buyBtnText}>Buy Now</Text>
+            <Text style={styles.buyBtnText}>Cash +{cashRewardCredits} cr</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.creditBuyBtn, !canBuyWithCredits && styles.creditBuyBtnDisabled]}
+            onPress={handleCreditPress}
+            activeOpacity={0.8}
+            testID={`shirt-credit-buy-${shirt.id}`}
+          >
+            <Coins size={14} color={canBuyWithCredits ? '#1A1200' : Colors.textMuted} />
+            <Text style={[styles.creditBuyBtnText, !canBuyWithCredits && styles.creditBuyBtnTextDisabled]}>
+              Use {creditCost} cr
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -179,8 +319,16 @@ function TShirtCard({ shirt }: { shirt: TShirt }) {
 export default function ShopScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<ShopTab>('ebooks');
+  const [activeTab, setActiveTab] = useState<ShopTab>('merch');
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const { totalAvailableCredits, addPurchasedCredits, spendCredits } = useMonetization();
+
+  const awardCredits = useCallback(
+    (amount: number) => {
+      addPurchasedCredits(amount);
+    },
+    [addPurchasedCredits]
+  );
 
   const switchTab = useCallback((tab: ShopTab) => {
     if (tab === activeTab) return;
@@ -189,7 +337,7 @@ export default function ShopScreen() {
     }
     setActiveTab(tab);
     Animated.spring(slideAnim, {
-      toValue: tab === 'ebooks' ? 0 : 1,
+      toValue: tab === 'merch' ? 0 : 1,
       useNativeDriver: true,
       tension: 80,
       friction: 12,
@@ -211,21 +359,15 @@ export default function ShopScreen() {
           <Sparkles size={18} color={Colors.gold} />
           <Text style={styles.headerTitle}>LottoMind Shop</Text>
         </View>
-        <View style={styles.headerRight} />
+        <View style={styles.headerRight}>
+          <View style={styles.walletPill}>
+            <Coins size={13} color={Colors.gold} />
+            <Text style={styles.walletPillText}>{totalAvailableCredits}</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'ebooks' && styles.tabActive]}
-          onPress={() => switchTab('ebooks')}
-          activeOpacity={0.7}
-          testID="tab-ebooks"
-        >
-          <BookOpen size={16} color={activeTab === 'ebooks' ? Colors.gold : Colors.textMuted} />
-          <Text style={[styles.tabText, activeTab === 'ebooks' && styles.tabTextActive]}>
-            E-Books
-          </Text>
-        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'merch' && styles.tabActive]}
           onPress={() => switchTab('merch')}
@@ -235,6 +377,17 @@ export default function ShopScreen() {
           <Shirt size={16} color={activeTab === 'merch' ? Colors.gold : Colors.textMuted} />
           <Text style={[styles.tabText, activeTab === 'merch' && styles.tabTextActive]}>
             T-Shirts & Merch
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'ebooks' && styles.tabActive]}
+          onPress={() => switchTab('ebooks')}
+          activeOpacity={0.7}
+          testID="tab-ebooks"
+        >
+          <BookOpen size={16} color={activeTab === 'ebooks' ? Colors.gold : Colors.textMuted} />
+          <Text style={[styles.tabText, activeTab === 'ebooks' && styles.tabTextActive]}>
+            E-Books
           </Text>
         </TouchableOpacity>
       </View>
@@ -260,17 +413,17 @@ export default function ShopScreen() {
 
             <View style={styles.promoBar}>
               <Tag size={14} color="#FFD700" />
-              <Text style={styles.promoText}>PDF downloads — read offline, keep forever</Text>
+              <Text style={styles.promoText}>PDF downloads: read offline and earn credits on free guides</Text>
             </View>
 
             {EBOOKS.map((book) => (
-              <EBookCard key={book.id} book={book} />
+              <EBookCard key={book.id} book={book} onRewardCredits={awardCredits} />
             ))}
 
             <View style={styles.bundleCard}>
               <View style={styles.bundleGlow} />
               <Star size={20} color="#FFD700" />
-              <Text style={styles.bundleTitle}>Complete Bundle — All 4 E-Books</Text>
+              <Text style={styles.bundleTitle}>Complete Bundle — All {EBOOKS.length} E-Books</Text>
               <View style={styles.bundlePriceRow}>
                 <Text style={styles.bundleOrigPrice}>$37.96</Text>
                 <Text style={styles.bundlePrice}>$24.99</Text>
@@ -314,11 +467,17 @@ export default function ShopScreen() {
 
             <View style={styles.promoBar}>
               <ShoppingBag size={14} color="#FFD700" />
-              <Text style={styles.promoText}>Free shipping on orders over $50</Text>
+              <Text style={styles.promoText}>Cash buys earn credits. Credit buys are 10% less than cash value.</Text>
             </View>
 
             {TSHIRTS.map((shirt) => (
-              <TShirtCard key={shirt.id} shirt={shirt} />
+              <TShirtCard
+                key={shirt.id}
+                shirt={shirt}
+                totalAvailableCredits={totalAvailableCredits}
+                onCashReward={awardCredits}
+                onSpendCredits={spendCredits}
+              />
             ))}
 
             <View style={styles.merchNote}>
@@ -372,7 +531,24 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   headerRight: {
-    width: 40,
+    minWidth: 58,
+    alignItems: 'flex-end',
+  },
+  walletPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.goldBorder,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  walletPillText: {
+    fontSize: 11,
+    fontWeight: '800' as const,
+    color: Colors.gold,
   },
   tabBar: {
     flexDirection: 'row',
@@ -527,6 +703,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800' as const,
     color: Colors.gold,
+  },
+  ebookRewardBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.22)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  ebookRewardBadgeClaimed: {
+    backgroundColor: Colors.surfaceLight,
+    borderColor: Colors.border,
+  },
+  ebookRewardText: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: '#FFD700',
+  },
+  ebookRewardTextClaimed: {
+    color: Colors.textMuted,
   },
   downloadBtn: {
     flexDirection: 'row',
@@ -719,10 +919,50 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: Colors.textMuted,
   },
+  merchPriceGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  merchPriceBox: {
+    flex: 1,
+    backgroundColor: Colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 10,
+    gap: 2,
+  },
+  creditPriceBox: {
+    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+    borderColor: Colors.goldBorder,
+  },
+  merchPriceLabel: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: Colors.textMuted,
+    textTransform: 'uppercase' as const,
+  },
+  creditPrice: {
+    fontSize: 20,
+    fontWeight: '800' as const,
+    color: '#FFD700',
+  },
+  cashRewardText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: Colors.green,
+  },
+  creditDiscountText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: Colors.gold,
+  },
   shirtFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
     marginTop: 4,
   },
   shirtPrice: {
@@ -731,12 +971,14 @@ const styles = StyleSheet.create({
     color: Colors.gold,
   },
   buyBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     backgroundColor: Colors.gold,
     borderRadius: 12,
-    paddingHorizontal: 18,
+    paddingHorizontal: 10,
     paddingVertical: 11,
     shadowColor: Colors.gold,
     shadowOffset: { width: 0, height: 3 },
@@ -745,9 +987,34 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buyBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800' as const,
     color: '#1A1200',
+  },
+  creditBuyBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FFD700',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.45)',
+  },
+  creditBuyBtnDisabled: {
+    backgroundColor: Colors.surfaceLight,
+    borderColor: Colors.border,
+  },
+  creditBuyBtnText: {
+    fontSize: 12,
+    fontWeight: '800' as const,
+    color: '#1A1200',
+  },
+  creditBuyBtnTextDisabled: {
+    color: Colors.textMuted,
   },
   merchNote: {
     flexDirection: 'row',

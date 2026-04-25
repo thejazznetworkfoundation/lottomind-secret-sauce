@@ -4,9 +4,11 @@ export type HeroAnimationState =
   | "idle"
   | "run"
   | "jump"
+  | "fall"
   | "land"
   | "crouch"
   | "climb"
+  | "swing"
   | "hurt"
   | "celebrate"
   | "jackpotPower";
@@ -16,9 +18,11 @@ export type HeroPoseKey =
   | "run1"
   | "run2"
   | "jump"
+  | "fall"
   | "land"
   | "crouch"
   | "climb"
+  | "swing"
   | "hurt"
   | "celebrate"
   | "jackpotPower";

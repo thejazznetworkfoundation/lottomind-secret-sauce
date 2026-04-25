@@ -9,6 +9,7 @@ export interface EBook {
   downloadUrl: string;
   pages: number;
   tag?: string;
+  creditReward?: number;
 }
 
 export interface TShirt {
@@ -24,6 +25,19 @@ export interface TShirt {
 }
 
 export const EBOOKS: EBook[] = [
+  {
+    id: 'lottomind-tools-guide',
+    title: 'LottoMind Tools Guide',
+    subtitle: 'Common Joe User Manual',
+    description: 'A plain-English walkthrough of every LottoMind tool: Power Tools, Heatmap, Dream Oracle, AI Picks, Sequence Engine, Arcade, Credits, Wallet, and more.',
+    price: 'FREE',
+    originalPrice: '$9.99',
+    coverImage: '/ebooks/lottomind-tools-guide-cover.svg',
+    downloadUrl: '/ebooks/lottomind-tools-guide.pdf',
+    pages: 11,
+    tag: 'BESTSELLER',
+    creditReward: 10,
+  },
   {
     id: 'ebook-1',
     title: 'The Lotto Mind Playbook',

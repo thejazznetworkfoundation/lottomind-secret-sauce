@@ -144,6 +144,8 @@
     death: ["death1", "death2", "death3", "fall1"],
   };
 
+  const pickupSpriteKeys = ["creditCard", "dataBook", "weaponPickup", "fireBadge", "scoreBadge"];
+
   const state = {
     mode: "ready",
     time: 0,
@@ -214,15 +216,15 @@
       makeEnemy(4040, GROUND_Y - 98, "core"),
     ];
     state.pickups = [
-      makePickup(520, 360),
-      makePickup(930, 320),
-      makePickup(1280, 268),
-      makePickup(1710, 336),
-      makePickup(2160, 286),
-      makePickup(2620, 240),
-      makePickup(3040, 322),
-      makePickup(3530, 274),
-      makePickup(3980, 368),
+      makePickup(520, 360, "creditCard"),
+      makePickup(930, 320, "dataBook"),
+      makePickup(1280, 268, "weaponPickup"),
+      makePickup(1710, 336, "fireBadge"),
+      makePickup(2160, 286, "scoreBadge"),
+      makePickup(2620, 240, "creditCard"),
+      makePickup(3040, 322, "dataBook"),
+      makePickup(3530, 274, "weaponPickup"),
+      makePickup(3980, 368, "scoreBadge"),
     ];
     startButton.textContent = "Restart";
     updateHud();
@@ -245,8 +247,8 @@
     };
   }
 
-  function makePickup(x, y) {
-    return { x, y, w: 28, h: 28, taken: false, pulse: Math.random() * 10 };
+  function makePickup(x, y, spriteKey = "creditCard") {
+    return { x, y, w: 28, h: 28, taken: false, pulse: Math.random() * 10, spriteKey };
   }
 
   function makeTransparentSprite(image) {
@@ -279,9 +281,11 @@
 
     return Promise.all(
       entries.map(([key, file]) =>
-        loadImage(`./assets/sprites/${file}`).then((image) => [key, makeTransparentSprite(image)])
+        loadImage(`./assets/sprites/${file}`)
+          .then((image) => [key, makeTransparentSprite(image)])
+          .catch(() => null)
       )
-    ).then((loadedEntries) => Object.fromEntries(loadedEntries));
+    ).then((loadedEntries) => Object.fromEntries(loadedEntries.filter(Boolean)));
   }
 
   function sprite(key) {
@@ -618,8 +622,10 @@
     const scenery = [
       { key: "treeWide", x: 560, y: GROUND_Y - 126, w: 136, h: 112 },
       { key: "rocks", x: 820, y: GROUND_Y - 42, w: 86, h: 48 },
+      { key: "ladder1", x: 1036, y: 296, w: 58, h: 92 },
       { key: "treeTall", x: 1510, y: 270, w: 94, h: 126 },
       { key: "fenceWide", x: 1970, y: GROUND_Y - 112, w: 118, h: 112 },
+      { key: "ropeClimb", x: 2184, y: 214, w: 58, h: 124 },
       { key: "waterfall", x: 2380, y: 260, w: 108, h: 166 },
       { key: "gate", x: 3320, y: 244, w: 102, h: 124 },
       { key: "fenceTall", x: 3770, y: GROUND_Y - 116, w: 106, h: 116 },
@@ -638,6 +644,10 @@
     for (const platform of state.platforms) {
       const x = Math.round(platform.x - state.cameraX);
       if (x + platform.w < -80 || x > W + 80) continue;
+
+      if (platform.y === GROUND_Y) {
+        drawTiledSprite(sprite("smallTile") || sprite("riverTile"), x, platform.y + 38, platform.w, 44);
+      }
 
       const topSprite = platform.y === GROUND_Y ? sprite("grassTile") || sprite("dirtBlock") : sprite("bridgePanel") || sprite("platformPanel");
       const drewTop = drawTiledSprite(topSprite, x, platform.y - 30, platform.w, platform.y === GROUND_Y ? 68 : 46);
@@ -682,7 +692,8 @@
       const x = pickup.x - state.cameraX;
       const y = pickup.y + Math.sin(pickup.pulse) * 5;
 
-      if (drawSpriteImage(sprite("creditCard") || sprite("scoreBadge") || sprite("fireBadge"), x - 7, y - 9, 42, 42, {
+      const pickupImage = sprite(pickup.spriteKey) || sprite(pickupSpriteKeys[Math.floor(pickup.pulse) % pickupSpriteKeys.length]);
+      if (drawSpriteImage(pickupImage, x - 7, y - 9, 42, 42, {
         shadowColor: "#ffc95f",
         shadowBlur: 12,
       })) {
@@ -726,6 +737,27 @@
         }
       }
 
+      if (enemy.type === "core") {
+        const coreOpen = Math.sin(state.time * 5) > 0.15;
+        drawSpriteImage(sprite("gate"), x - 28, enemy.y - 38, 126, 152, {
+          alpha: 0.92,
+          shadowColor: "#c76cff",
+          shadowBlur: 22,
+        });
+        drawSpriteImage(sprite(coreOpen ? "fireSign" : "skullBadge"), x + 8, enemy.y - 8, 62, 62, {
+          shadowColor: coreOpen ? "#ffc95f" : "#ff5f87",
+          shadowBlur: 16,
+        });
+        if (coreOpen) {
+          drawSpriteImage(sprite("flame"), x + 26, enemy.y + 44, 42, 42, {
+            shadowColor: "#ffc95f",
+            shadowBlur: 18,
+          });
+        }
+        drawEnemyHealthBar(enemy, x, "#c76cff", 12);
+        continue;
+      }
+
       ctx.save();
       ctx.translate(x + enemy.w / 2, enemy.y + enemy.h / 2);
       ctx.shadowColor = enemy.type === "core" ? "#c76cff" : "#ff5f87";
@@ -743,31 +775,44 @@
       ctx.fillRect(enemy.w * 0.08, -enemy.h * 0.28, 6, 6);
       ctx.restore();
 
-      if (enemy.type === "core") {
-        const barWidth = 90;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.56)";
-        ctx.fillRect(x - 8, enemy.y - 18, barWidth, 8);
-        ctx.fillStyle = "#c76cff";
-        ctx.fillRect(x - 8, enemy.y - 18, barWidth * Math.max(0, enemy.hp / 12), 8);
-      }
+      drawEnemyHealthBar(enemy, x, enemy.type === "turret" ? "#ffc95f" : "#ff5f87", enemy.type === "turret" ? 4 : 3);
     }
+  }
+
+  function drawEnemyHealthBar(enemy, x, color, maxHp) {
+    const barWidth = enemy.type === "core" ? 90 : 44;
+    const y = enemy.y - 18;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.56)";
+    ctx.fillRect(x - 4, y, barWidth, 8);
+    ctx.fillStyle = color;
+    ctx.fillRect(x - 4, y, barWidth * clamp(enemy.hp / maxHp, 0, 1), 8);
   }
 
   function drawBullets() {
     ctx.save();
     for (const bullet of state.bullets) {
-      ctx.fillStyle = "#ffc95f";
-      ctx.shadowColor = "#ffc95f";
-      ctx.shadowBlur = 14;
-      roundRect(bullet.x - state.cameraX, bullet.y, bullet.w, bullet.h, 5);
-      ctx.fill();
+      if (!drawSpriteImage(sprite("burst"), bullet.x - state.cameraX - 4, bullet.y - 12, 30, 30, {
+        shadowColor: "#ffc95f",
+        shadowBlur: 14,
+      })) {
+        ctx.fillStyle = "#ffc95f";
+        ctx.shadowColor = "#ffc95f";
+        ctx.shadowBlur = 14;
+        roundRect(bullet.x - state.cameraX, bullet.y, bullet.w, bullet.h, 5);
+        ctx.fill();
+      }
     }
     for (const bullet of state.enemyBullets) {
-      ctx.fillStyle = "#ff5f87";
-      ctx.shadowColor = "#ff5f87";
-      ctx.shadowBlur = 10;
-      roundRect(bullet.x - state.cameraX, bullet.y, bullet.w, bullet.h, 5);
-      ctx.fill();
+      if (!drawSpriteImage(sprite("flame"), bullet.x - state.cameraX - 5, bullet.y - 16, 32, 32, {
+        shadowColor: "#ff5f87",
+        shadowBlur: 10,
+      })) {
+        ctx.fillStyle = "#ff5f87";
+        ctx.shadowColor = "#ff5f87";
+        ctx.shadowBlur = 10;
+        roundRect(bullet.x - state.cameraX, bullet.y, bullet.w, bullet.h, 5);
+        ctx.fill();
+      }
     }
     ctx.restore();
   }
@@ -878,6 +923,11 @@
     const x = WORLD_WIDTH - 180 - state.cameraX;
     const y = GROUND_Y - 132;
     ctx.save();
+    drawSpriteImage(sprite("gate"), x - 6, y - 14, 112, 144, {
+      alpha: open ? 1 : 0.58,
+      shadowColor: open ? "#ffc95f" : "#c76cff",
+      shadowBlur: open ? 24 : 12,
+    });
     ctx.strokeStyle = open ? "#ffc95f" : "rgba(199, 108, 255, 0.45)";
     ctx.lineWidth = 5;
     ctx.shadowColor = open ? "#ffc95f" : "#c76cff";
@@ -911,6 +961,24 @@
     ctx.font = "700 14px Trebuchet MS, sans-serif";
     ctx.fillText("Move, jump, shoot, slash, collect mind credits, and break the cathedral core.", W / 2, H / 2 + 36);
     ctx.restore();
+  }
+
+  function drawBootScreen(message = "Loading updated sprite build...") {
+    ctx.clearRect(0, 0, W, H);
+    const background = ctx.createLinearGradient(0, 0, W, H);
+    background.addColorStop(0, "#03040a");
+    background.addColorStop(0.55, "#090512");
+    background.addColorStop(1, "#061116");
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#f7eeff";
+    ctx.font = "900 48px Trebuchet MS, sans-serif";
+    ctx.fillText("Gothtechnology", W / 2, H / 2 - 24);
+    ctx.fillStyle = "#ffc95f";
+    ctx.font = "800 16px Trebuchet MS, sans-serif";
+    ctx.fillText(message, W / 2, H / 2 + 20);
+    ctx.textAlign = "start";
   }
 
   function updateHud() {
@@ -1011,6 +1079,8 @@
     requestAnimationFrame(loop);
   }
 
+  drawBootScreen();
+
   Promise.all([
     loadSpriteAssets(),
     loadImage("./assets/goth-hero-sheet.png"),
@@ -1037,5 +1107,7 @@
     };
     updateHud();
     requestAnimationFrame(loop);
+  }).catch(() => {
+    drawBootScreen("Could not load the game art. Refresh the arcade preview.");
   });
 })();

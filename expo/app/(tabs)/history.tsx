@@ -4,16 +4,22 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  Platform,
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Clock, Trash2, Flame, Snowflake, Scale, Brain, Database, Mail } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Brain, ChevronRight, Clock, Crown, Database, Flame, Scale, Share2, ShoppingBag, Snowflake, Trash2, Users } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { ARCADE_COLORS } from '@/constants/arcade';
 import { Colors } from '@/constants/colors';
 import AppBackground from '@/components/AppBackground';
 import { GAME_CONFIGS } from '@/constants/games';
+import { useGamification } from '@/providers/GamificationProvider';
 import { useLotto } from '@/providers/LottoProvider';
 
 import { GeneratedSet, StrategyType } from '@/types/lottery';
+import { shareReferral } from '@/utils/share';
 
 function getStrategyIcon(strategy: StrategyType) {
   switch (strategy) {
@@ -43,7 +49,20 @@ function formatDate(iso: string): string {
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { history, clearHistory } = useLotto();
+  const { referralCode, referralCount, trackShare } = useGamification();
+
+  const handleShareReferral = useCallback(async () => {
+    const shared = await shareReferral(referralCode);
+
+    if (shared) {
+      trackShare();
+      if (Platform.OS !== 'web') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    }
+  }, [referralCode, trackShare]);
 
 
   const renderItem = useCallback(({ item }: { item: GeneratedSet }) => {
@@ -119,6 +138,65 @@ export default function HistoryScreen() {
         ) : null}
       </View>
 
+      <TouchableOpacity
+        style={styles.merchStoreBar}
+        onPress={() => router.push('/shop')}
+        activeOpacity={0.78}
+        testID="history-merch-store"
+      >
+        <View style={styles.merchStoreIcon}>
+          <ShoppingBag size={18} color="#07101F" />
+        </View>
+        <View style={styles.merchStoreCopy}>
+          <Text style={styles.merchStoreTitle}>Merch Store</Text>
+          <Text style={styles.merchStoreSubtitle}>T-shirts, books, and LottoMind drops</Text>
+        </View>
+        <ChevronRight size={18} color={Colors.gold} />
+      </TouchableOpacity>
+
+      <View style={styles.inviteRewardsCard}>
+        <View style={styles.inviteHeader}>
+          <View style={styles.inviteIconWrap}>
+            <Crown size={20} color="#FFD700" />
+          </View>
+          <View style={styles.inviteHeaderCopy}>
+            <Text style={styles.inviteTitle}>Invite Friends, Earn Rewards</Text>
+            <Text style={styles.inviteSub}>Arcade squad rewards: +100 XP and +5 credits per invite.</Text>
+          </View>
+        </View>
+        <View style={styles.inviteCodeRow}>
+          <View style={styles.inviteCodeBox}>
+            <Text style={styles.inviteCodeLabel}>Your code</Text>
+            <Text style={styles.inviteCodeText}>{referralCode}</Text>
+          </View>
+          <View style={styles.inviteStatsBox}>
+            <Users size={15} color={ARCADE_COLORS.teal} />
+            <Text style={styles.inviteStatsText}>{referralCount} invited</Text>
+          </View>
+        </View>
+        <View style={styles.inviteActions}>
+          <TouchableOpacity
+            style={styles.invitePrimaryButton}
+            onPress={() => { void handleShareReferral(); }}
+            activeOpacity={0.78}
+            testID="history-share-invite-btn"
+          >
+            <Share2 size={16} color="#1A1200" />
+            <Text style={styles.invitePrimaryText}>Share Invite Link</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.inviteSecondaryButton}
+            onPress={() => router.push('/profile' as never)}
+            activeOpacity={0.78}
+            testID="history-referral-profile-btn"
+          >
+            <Text style={styles.inviteSecondaryText}>Rewards</Text>
+            <ChevronRight size={15} color={ARCADE_COLORS.gold} />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.inviteFinePrint}>Rewards are in-app credits, XP, badges, and unlocks only.</Text>
+      </View>
+
       {history.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
@@ -176,6 +254,171 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600' as const,
     color: Colors.red,
+  },
+  merchStoreBar: {
+    marginHorizontal: 20,
+    marginTop: 14,
+    marginBottom: 2,
+    minHeight: 58,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.goldBorder,
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  merchStoreIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: Colors.goldLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  merchStoreCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  merchStoreTitle: {
+    fontSize: 15,
+    fontWeight: '900' as const,
+    color: Colors.gold,
+  },
+  merchStoreSubtitle: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
+  },
+  inviteRewardsCard: {
+    marginHorizontal: 20,
+    marginTop: 14,
+    borderRadius: 20,
+    padding: 16,
+    backgroundColor: 'rgba(8, 18, 40, 0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.24)',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  inviteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  inviteIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.28)',
+  },
+  inviteHeaderCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  inviteTitle: {
+    color: '#FFD700',
+    fontSize: 17,
+    fontWeight: '900' as const,
+  },
+  inviteSub: {
+    color: ARCADE_COLORS.muted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  inviteCodeRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  inviteCodeBox: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 12,
+    backgroundColor: 'rgba(255, 201, 95, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 201, 95, 0.18)',
+  },
+  inviteCodeLabel: {
+    color: ARCADE_COLORS.muted,
+    fontSize: 10,
+    fontWeight: '900' as const,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+  },
+  inviteCodeText: {
+    marginTop: 5,
+    color: ARCADE_COLORS.gold,
+    fontSize: 18,
+    fontWeight: '900' as const,
+  },
+  inviteStatsBox: {
+    minWidth: 104,
+    borderRadius: 16,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0, 229, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.16)',
+  },
+  inviteStatsText: {
+    color: ARCADE_COLORS.text,
+    fontSize: 12,
+    fontWeight: '800' as const,
+  },
+  inviteActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  invitePrimaryButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FFD700',
+  },
+  invitePrimaryText: {
+    color: '#1A1200',
+    fontSize: 14,
+    fontWeight: '900' as const,
+  },
+  inviteSecondaryButton: {
+    minHeight: 48,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.2)',
+  },
+  inviteSecondaryText: {
+    color: ARCADE_COLORS.gold,
+    fontSize: 13,
+    fontWeight: '900' as const,
+  },
+  inviteFinePrint: {
+    marginTop: 10,
+    color: ARCADE_COLORS.muted,
+    fontSize: 11,
+    lineHeight: 16,
   },
   list: {
     padding: 20,

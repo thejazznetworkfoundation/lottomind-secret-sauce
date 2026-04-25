@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { StyleProp, ViewStyle } from 'react-native';
 import {
   Alert,
   Linking,
@@ -12,12 +13,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ChevronRight, CircleDollarSign, ShoppingBag, X } from 'lucide-react-native';
 
 import AppBackground from '@/components/AppBackground';
 import { ArcadeGameCard } from '@/components/arcade/ArcadeGameCard';
+import { ArcadeGameSprite } from '@/components/arcade/ArcadeGameSprite';
 import { ArcadeHUD } from '@/components/arcade/ArcadeHUD';
 import { StageRenderer } from '@/components/game/StageRenderer';
 import { ARCADE_COLORS } from '@/constants/arcade';
@@ -76,6 +78,28 @@ function ActionButton({
       style={[styles.actionButton, wide && styles.actionButtonWide, { backgroundColor: accent }]}
     >
       <Text style={styles.actionButtonText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function JoystickButton({
+  label,
+  onPressIn,
+  onPressOut,
+  style,
+}: {
+  label: string;
+  onPressIn: () => void;
+  onPressOut?: () => void;
+  style: StyleProp<ViewStyle>;
+}) {
+  return (
+    <Pressable
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      style={({ pressed }) => [styles.joystickHit, style, pressed && styles.joystickHitPressed]}
+    >
+      <Text style={styles.joystickText}>{label}</Text>
     </Pressable>
   );
 }
@@ -276,9 +300,14 @@ function WebArcadeCabinet({
 export default function ArcadeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { game: requestedGameParam } = useLocalSearchParams<{ game?: string | string[] }>();
   const { width, height } = useWindowDimensions();
   const { credits, addCredits } = useGamification();
-  const [activeGameId, setActiveGameId] = useState(arcadeGameCatalog[0]?.id ?? null);
+  const requestedGameId = Array.isArray(requestedGameParam) ? requestedGameParam[0] : requestedGameParam;
+  const requestedGameExists = arcadeGameCatalog.some((game) => game.id === requestedGameId);
+  const [activeGameId, setActiveGameId] = useState(
+    requestedGameExists ? requestedGameId! : arcadeGameCatalog[0]?.id ?? null
+  );
   const [lastAward, setLastAward] = useState<{ credits: number; title: string } | null>(null);
   const awardedRunKeyRef = useRef<string | null>(null);
 
@@ -320,6 +349,14 @@ export default function ArcadeScreen() {
     awardedRunKeyRef.current = null;
     controls.resetRun();
   }, [activeGameId, controls]);
+
+  useEffect(() => {
+    if (!requestedGameId || !arcadeGameCatalog.some((game) => game.id === requestedGameId)) {
+      return;
+    }
+
+    setActiveGameId(requestedGameId);
+  }, [requestedGameId]);
 
   useEffect(() => {
     if (!activeNativeGame || (snapshot.status !== 'victory' && snapshot.status !== 'gameOver')) {
@@ -368,10 +405,18 @@ export default function ArcadeScreen() {
       : snapshot.status === 'paused'
         ? controls.resumeRun
         : controls.resetRun;
+  const closeArcade = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/');
+  }, [router]);
 
   return (
     <AppBackground style={{ paddingTop: insets.top }}>
-      <TouchableOpacity style={styles.closeButton} onPress={() => router.back()} activeOpacity={0.75}>
+      <TouchableOpacity style={styles.closeButton} onPress={closeArcade} activeOpacity={0.75}>
         <X size={22} color={Colors.textSecondary} />
       </TouchableOpacity>
 
@@ -384,7 +429,7 @@ export default function ArcadeScreen() {
             one LottoMind™ rewards loop. Complete runs, puzzles, trivia, and card challenges to grow your Mind Credits balance.
           </Text>
           <View style={styles.balancePill}>
-            <Text style={styles.balanceLabel}>Current Balance</Text>
+            <Text style={styles.balanceLabel}>Credit Vault Balance</Text>
             <Text style={styles.balanceValue}>{formatCredits(credits)} Credits</Text>
           </View>
           <Pressable style={styles.vaultCard} onPress={() => router.push('/credit-store' as never)}>
@@ -392,8 +437,8 @@ export default function ArcadeScreen() {
               <CircleDollarSign size={22} color={ARCADE_COLORS.gold} />
             </View>
             <View style={styles.vaultCopy}>
-              <Text style={styles.vaultLabel}>Credit Vault</Text>
-              <Text style={styles.vaultHint}>Open the marketplace, reload credits, and unlock store drops.</Text>
+              <Text style={styles.vaultLabel}>Mind Marketplace</Text>
+              <Text style={styles.vaultHint}>Open Credit Vault packs, reload credits, and unlock marketplace drops.</Text>
             </View>
             <View style={styles.vaultChevronWrap}>
               <ShoppingBag size={16} color={ARCADE_COLORS.gold} />
@@ -429,9 +474,12 @@ export default function ArcadeScreen() {
                     { borderColor: isActive ? game.accentColor : 'rgba(255,255,255,0.1)' },
                   ]}
                 >
-                  <Text style={[styles.quickLaunchMode, { color: game.accentColor }]}>
-                    {game.kind === 'native' ? 'Native' : game.kind === 'web' ? 'Web Play' : 'App Game'}
-                  </Text>
+                  <View style={styles.quickLaunchTopRow}>
+                    <Text style={[styles.quickLaunchMode, { color: game.accentColor }]}>
+                      {game.kind === 'native' ? 'Native' : game.kind === 'web' ? 'Web Play' : 'App Game'}
+                    </Text>
+                    <ArcadeGameSprite game={game} size={38} compact />
+                  </View>
                   <Text style={styles.quickLaunchTitle}>{game.title}</Text>
                   <Text style={styles.quickLaunchCta}>{isActive ? 'Loaded' : game.ctaLabel}</Text>
                 </Pressable>
@@ -479,13 +527,40 @@ export default function ArcadeScreen() {
             </View>
 
             <View style={styles.controlsRow}>
-              <View style={styles.controlsCluster}>
-                <ActionButton label="Left" onPressIn={() => controls.setInput({ left: true })} onPressOut={() => controls.setInput({ left: false })} />
-                <ActionButton label="Down" onPressIn={() => controls.setInput({ down: true })} onPressOut={() => controls.setInput({ down: false })} />
-                <ActionButton label="Right" onPressIn={() => controls.setInput({ right: true })} onPressOut={() => controls.setInput({ right: false })} />
+              <View style={styles.joystickPanel}>
+                <Text style={styles.controlLabel}>Move</Text>
+                <View style={styles.joystickBase}>
+                  <JoystickButton
+                    label="↑"
+                    style={styles.joystickUp}
+                    onPressIn={() => controls.setInput({ up: true })}
+                    onPressOut={() => controls.setInput({ up: false })}
+                  />
+                  <JoystickButton
+                    label="←"
+                    style={styles.joystickLeft}
+                    onPressIn={() => controls.setInput({ left: true })}
+                    onPressOut={() => controls.setInput({ left: false })}
+                  />
+                  <View style={styles.joystickCenter}>
+                    <Text style={styles.joystickCenterText}>JOY</Text>
+                  </View>
+                  <JoystickButton
+                    label="→"
+                    style={styles.joystickRight}
+                    onPressIn={() => controls.setInput({ right: true })}
+                    onPressOut={() => controls.setInput({ right: false })}
+                  />
+                  <JoystickButton
+                    label="↓"
+                    style={styles.joystickDown}
+                    onPressIn={() => controls.setInput({ down: true })}
+                    onPressOut={() => controls.setInput({ down: false })}
+                  />
+                </View>
               </View>
-              <View style={styles.controlsCluster}>
-                <ActionButton label="Up" onPressIn={() => controls.setInput({ up: true })} onPressOut={() => controls.setInput({ up: false })} />
+              <View style={styles.actionPad}>
+                <Text style={styles.controlLabel}>Action</Text>
                 <ActionButton
                   label="Jump"
                   wide
@@ -493,6 +568,7 @@ export default function ArcadeScreen() {
                   onPressIn={() => controls.setInput({ jumpPressed: true, jumpHeld: true })}
                   onPressOut={() => controls.setInput({ jumpHeld: false })}
                 />
+                <Text style={styles.actionPadHint}>Hold to clear ledges. Use down to crouch or drop faster.</Text>
               </View>
             </View>
           </>
@@ -682,7 +758,7 @@ const styles = StyleSheet.create({
   },
   quickLaunchChip: {
     width: 166,
-    minHeight: 104,
+    minHeight: 128,
     borderRadius: 20,
     padding: 13,
     backgroundColor: 'rgba(4, 9, 21, 0.9)',
@@ -692,7 +768,14 @@ const styles = StyleSheet.create({
   quickLaunchChipActive: {
     backgroundColor: 'rgba(255, 201, 95, 0.1)',
   },
+  quickLaunchTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   quickLaunchMode: {
+    flex: 1,
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1,
@@ -847,16 +930,103 @@ const styles = StyleSheet.create({
   },
   controlsRow: {
     marginTop: 14,
-  },
-  controlsCluster: {
     flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 12,
+  },
+  joystickPanel: {
+    width: 154,
+    borderRadius: 24,
+    padding: 12,
+    backgroundColor: 'rgba(2, 8, 20, 0.86)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  controlLabel: {
+    color: ARCADE_COLORS.muted,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  joystickBase: {
+    width: 126,
+    height: 126,
+    borderRadius: 63,
+    alignSelf: 'center',
+    position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.045)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 201, 95, 0.18)',
+  },
+  joystickHit: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 201, 95, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 201, 95, 0.22)',
+  },
+  joystickHitPressed: {
+    backgroundColor: 'rgba(255, 201, 95, 0.32)',
+    borderColor: ARCADE_COLORS.gold,
+  },
+  joystickUp: {
+    top: 7,
+    left: 43,
+  },
+  joystickLeft: {
+    top: 43,
+    left: 7,
+  },
+  joystickRight: {
+    top: 43,
+    right: 7,
+  },
+  joystickDown: {
+    bottom: 7,
+    left: 43,
+  },
+  joystickText: {
+    color: ARCADE_COLORS.gold,
+    fontSize: 19,
+    fontWeight: '900',
+  },
+  joystickCenter: {
+    position: 'absolute',
+    left: 43,
+    top: 43,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 229, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.18)',
+  },
+  joystickCenterText: {
+    color: ARCADE_COLORS.teal,
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  actionPad: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 24,
+    padding: 12,
     justifyContent: 'space-between',
-    marginBottom: 10,
+    backgroundColor: 'rgba(8, 18, 40, 0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   actionButton: {
     flex: 1,
     minHeight: 52,
-    marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 18,
@@ -870,6 +1040,12 @@ const styles = StyleSheet.create({
     color: ARCADE_COLORS.text,
     fontSize: 15,
     fontWeight: '900',
+  },
+  actionPadHint: {
+    color: ARCADE_COLORS.muted,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
   },
   challengeCard: {
     position: 'relative',

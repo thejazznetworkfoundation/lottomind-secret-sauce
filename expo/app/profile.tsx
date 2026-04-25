@@ -23,6 +23,7 @@ import {
   Flame,
   Copy,
   ChevronLeft,
+  Brain,
   Star,
   Users,
   TrendingUp,
@@ -37,6 +38,7 @@ import { useGamification } from '@/providers/GamificationProvider';
 import { usePro } from '@/providers/ProProvider';
 import { useMonetization } from '@/providers/MonetizationProvider';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useSettings } from '@/providers/SettingsProvider';
 import { LEVELS, REFERRAL_TIERS, XP_REWARDS } from '@/constants/gamification';
 import { shareReferral } from '@/utils/share';
 import { useLotto } from '@/providers/LottoProvider';
@@ -69,6 +71,7 @@ export default function ProfileScreen() {
     creditUsagePercent, isLowCredits,
   } = useMonetization();
   const { isDark, toggleTheme } = useTheme();
+  const { isPsychicEnabled, toggleFeatureFlag } = useSettings();
   const [referralInput, setReferralInput] = useState<string>('');
   const [showReferralInput, setShowReferralInput] = useState<boolean>(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -424,6 +427,56 @@ export default function ProfileScreen() {
             </View>
           ))}
         </View>
+
+        {isPsychicEnabled ? (
+          <TouchableOpacity
+            style={styles.themeToggleCard}
+            onPress={() => router.push('/luck-profile' as never)}
+            activeOpacity={0.7}
+            testID="personal-luck-profile-link"
+          >
+            <View style={[styles.themeToggleIconWrap, { backgroundColor: 'rgba(139, 92, 246, 0.12)' }]}>
+              <Brain size={20} color="#C4B5FD" />
+            </View>
+            <View style={styles.themeToggleInfo}>
+              <Text style={styles.themeToggleTitle}>Personal Luck Profile</Text>
+              <Text style={styles.themeToggleSub}>
+                Build your evolving psychic fingerprint from name, birthdate, behavior, and past picks.
+              </Text>
+            </View>
+            <Zap size={16} color={Colors.gold} />
+          </TouchableOpacity>
+        ) : null}
+
+        <TouchableOpacity
+          style={styles.themeToggleCard}
+          onPress={() => {
+            void toggleFeatureFlag('aiPsychicEngine');
+            if (Platform.OS !== 'web') {
+              void Haptics.selectionAsync();
+            }
+          }}
+          activeOpacity={0.7}
+          testID="ai-psychic-toggle"
+        >
+          <View style={[styles.themeToggleIconWrap, { backgroundColor: 'rgba(139, 92, 246, 0.12)' }]}>
+            <Brain size={20} color="#8B5CF6" />
+          </View>
+          <View style={styles.themeToggleInfo}>
+            <Text style={styles.themeToggleTitle}>AI Psychic Engine</Text>
+            <Text style={styles.themeToggleSub}>
+              {isPsychicEnabled
+                ? 'Psychic readings, fortune drops, and fusion insights are on.'
+                : 'Psychic features are hidden. Standard LottoMind tools stay active.'}
+            </Text>
+          </View>
+          <View style={[styles.themeTogglePill, { backgroundColor: isPsychicEnabled ? 'rgba(139, 92, 246, 0.2)' : 'rgba(148, 163, 184, 0.15)' }]}>
+            <View style={[
+              styles.themeToggleDot,
+              { backgroundColor: isPsychicEnabled ? '#8B5CF6' : '#94A3B8', alignSelf: isPsychicEnabled ? 'flex-end' as const : 'flex-start' as const },
+            ]} />
+          </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.themeToggleCard}

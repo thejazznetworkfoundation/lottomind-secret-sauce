@@ -1,11 +1,18 @@
 import { memo } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 
 import type { SpriteSource } from "@/constants/arcadeAssets";
 import type { ArcadeRenderableAsset } from "@/types/arcade";
 import { getSpriteCropStyles, getSpriteSourceCropStyles } from "@/utils/spriteCrop";
+
+const pixelArtImageStyle =
+  Platform.OS === "web"
+    ? ({
+        imageRendering: "pixelated",
+      } as never)
+    : null;
 
 interface ArcadeSpriteProps {
   asset?: ArcadeRenderableAsset;
@@ -97,20 +104,20 @@ function ArcadeSpriteComponent({
         >
           {cropStyles ? (
             <View style={cropStyles.containerStyle}>
-              <Image source={imageSource} contentFit="fill" style={cropStyles.imageStyle} />
+              <Image source={imageSource} contentFit="fill" style={[cropStyles.imageStyle, pixelArtImageStyle]} />
             </View>
           ) : (
-            <Image source={imageSource} contentFit="fill" style={StyleSheet.absoluteFillObject} />
+            <Image source={imageSource} contentFit="fill" style={[StyleSheet.absoluteFillObject, pixelArtImageStyle]} />
           )}
         </View>
       ) : null}
       {glowColor ? <View style={[styles.glow, { backgroundColor: glowColor }]} /> : null}
       {cropStyles ? (
         <View style={cropStyles.containerStyle}>
-          <Image source={imageSource} contentFit="fill" style={cropStyles.imageStyle} />
+          <Image source={imageSource} contentFit="fill" style={[cropStyles.imageStyle, pixelArtImageStyle]} />
         </View>
       ) : (
-        <Image source={imageSource} contentFit="fill" style={StyleSheet.absoluteFillObject} />
+        <Image source={imageSource} contentFit="fill" style={[StyleSheet.absoluteFillObject, pixelArtImageStyle]} />
       )}
     </View>
   );

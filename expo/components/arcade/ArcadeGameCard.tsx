@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { ARCADE_COLORS } from "@/constants/arcade";
 import { arcadeUiArt } from "@/constants/arcadeAssets";
 import type { ArcadeGameCatalogEntry } from "@/types/stage";
+import { ArcadeGameSprite } from "@/components/arcade/ArcadeGameSprite";
 
 interface ArcadeGameCardProps {
   game: ArcadeGameCatalogEntry;
@@ -51,7 +52,7 @@ export function ArcadeGameCard({ game, bestScore, totalRuns = 0, onPlay }: Arcad
           <View style={[styles.categoryPill, { borderColor: game.accentColor }]}>
             <Text style={[styles.categoryText, { color: game.accentColor }]}>{game.categoryLabel}</Text>
           </View>
-          <View style={[styles.accentDot, { backgroundColor: game.accentColor }]} />
+          <ArcadeGameSprite game={game} size={64} compact />
         </View>
 
         <Text style={styles.title}>{game.title}</Text>
@@ -126,11 +127,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1.2,
     textTransform: "uppercase",
-  },
-  accentDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
   },
   title: {
     color: ARCADE_COLORS.text,

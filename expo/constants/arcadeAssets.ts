@@ -11,11 +11,8 @@ import type {
   SpriteSheetDefinition,
 } from "@/types/arcade";
 import {
-  cleanHeroCrops,
-  creatureSpriteCrops,
   environmentDecorCrops,
   getHeroAnimationPoseKey,
-  worldPropCrops,
 } from "@/utils/spriteCrop";
 
 export type HeroPose =
@@ -23,9 +20,11 @@ export type HeroPose =
   | "run1"
   | "run2"
   | "jump"
+  | "fall"
   | "land"
   | "crouch"
   | "climb"
+  | "swing"
   | "hurt"
   | "celebrate"
   | "jackpotPower";
@@ -62,6 +61,36 @@ const jungleVaultAmethystImage = require("@/assets/arcade/jungle-vault-bg-amethy
 const jungleVaultGoldImage = require("@/assets/arcade/jungle-vault-bg-gold.png") as ImageSourcePropType;
 const classicJungleBannerImage = require("@/assets/arcade/classic-jungle-banner.png") as ImageSourcePropType;
 const gothtechnologyBannerImage = require("@/assets/arcade/gothtechnology-banner.png") as ImageSourcePropType;
+const brandedJungleBackgroundImage = require("@/assets/arcade/branded/jungle-biome-background.jpg") as ImageSourcePropType;
+const brandedHeroIdleImage = require("@/assets/arcade/branded/hero-idle.png") as ImageSourcePropType;
+const brandedHeroRun1Image = require("@/assets/arcade/branded/hero-run1.png") as ImageSourcePropType;
+const brandedHeroRun2Image = require("@/assets/arcade/branded/hero-run2.png") as ImageSourcePropType;
+const brandedHeroJumpImage = require("@/assets/arcade/branded/hero-jump.png") as ImageSourcePropType;
+const brandedHeroLandImage = require("@/assets/arcade/branded/hero-land.png") as ImageSourcePropType;
+const brandedHeroCrouchImage = require("@/assets/arcade/branded/hero-crouch.png") as ImageSourcePropType;
+const brandedHeroClimbImage = require("@/assets/arcade/branded/hero-climb.png") as ImageSourcePropType;
+const brandedHeroHurtImage = require("@/assets/arcade/branded/hero-hurt.png") as ImageSourcePropType;
+const brandedHeroCelebrateImage = require("@/assets/arcade/branded/hero-celebrate.png") as ImageSourcePropType;
+const brandedHeroJackpotPowerImage = require("@/assets/arcade/branded/hero-jackpot-power.png") as ImageSourcePropType;
+const brandedVillainMaskKeeperImage = require("@/assets/arcade/branded/villain-mask-keeper.png") as ImageSourcePropType;
+const brandedPlatformImage = require("@/assets/arcade/branded/platform.png") as ImageSourcePropType;
+const brandedPlatformTallImage = require("@/assets/arcade/branded/platform-tall.png") as ImageSourcePropType;
+const brandedPlatformStepImage = require("@/assets/arcade/branded/platform-step.png") as ImageSourcePropType;
+const brandedPlatformLedgeImage = require("@/assets/arcade/branded/platform-ledge.png") as ImageSourcePropType;
+const brandedRuinColumnImage = require("@/assets/arcade/branded/ruin-column.png") as ImageSourcePropType;
+const brandedMossPatchImage = require("@/assets/arcade/branded/moss-patch.png") as ImageSourcePropType;
+const brandedCircuitLogImage = require("@/assets/arcade/branded/circuit-log.png") as ImageSourcePropType;
+const brandedPurplePuddleImage = require("@/assets/arcade/branded/purple-dream-puddle.png") as ImageSourcePropType;
+const brandedGoldPuddleImage = require("@/assets/arcade/branded/gold-jackpot-puddle.png") as ImageSourcePropType;
+const brandedScorpionImage = require("@/assets/arcade/branded/scorpion.png") as ImageSourcePropType;
+const brandedBlueGemImage = require("@/assets/arcade/branded/blue-gem.png") as ImageSourcePropType;
+const brandedDiamondRingImage = require("@/assets/arcade/branded/diamond-ring.png") as ImageSourcePropType;
+const brandedTreasureChestImage = require("@/assets/arcade/branded/treasure-chest.png") as ImageSourcePropType;
+const brandedVaultGoalImage = require("@/assets/arcade/branded/vault-goal.png") as ImageSourcePropType;
+const brandedLadderImage = require("@/assets/arcade/branded/ladder.png") as ImageSourcePropType;
+const brandedVinePurpleImage = require("@/assets/arcade/branded/vine-purple.png") as ImageSourcePropType;
+const brandedVineGoldImage = require("@/assets/arcade/branded/vine-gold.png") as ImageSourcePropType;
+const brandedVineGreenImage = require("@/assets/arcade/branded/vine-green.png") as ImageSourcePropType;
 
 const sheet = (source: ImageSourcePropType, width: number, height: number): SpriteSheetDefinition => ({
   source,
@@ -100,8 +129,6 @@ const croppedAsset = (
   ...options,
 });
 
-const conceptSwapHint = "Replace this concept-driven crop with an exported transparent PNG when final sprite art is ready.";
-
 export const arcadeSheets = {
   hero: sheet(characterTransparentSheetImage, 1536, 1024),
   heroClean: sheet(heroMainTransparentImage, 1280, 720),
@@ -114,6 +141,7 @@ export const arcadeSheets = {
   jungleVaultEmerald: sheet(jungleVaultEmeraldImage, 1920, 720),
   jungleVaultAmethyst: sheet(jungleVaultAmethystImage, 1920, 720),
   jungleVaultGold: sheet(jungleVaultGoldImage, 1920, 720),
+  brandedJungleBackground: sheet(brandedJungleBackgroundImage, 798, 390),
   environmentDecor: sheet(environmentSheetImage, 1448, 1086),
   platform: sheet(characterTransparentSheetImage, 1536, 1024),
   log: sheet(characterTransparentSheetImage, 1536, 1024),
@@ -129,6 +157,37 @@ export const arcadeSheets = {
   preview: sheet(vrunReferenceImage, 1672, 941),
   classicJungleBanner: sheet(classicJungleBannerImage, 896, 1200),
   gothtechnologyBanner: sheet(gothtechnologyBannerImage, 1280, 720),
+  brandedHeroIdle: sheet(brandedHeroIdleImage, 82, 162),
+  brandedHeroRun1: sheet(brandedHeroRun1Image, 181, 164),
+  brandedHeroRun2: sheet(brandedHeroRun2Image, 199, 174),
+  brandedHeroJump: sheet(brandedHeroJumpImage, 212, 188),
+  brandedHeroFall: sheet(brandedHeroLandImage, 93, 161),
+  brandedHeroLand: sheet(brandedHeroLandImage, 93, 161),
+  brandedHeroCrouch: sheet(brandedHeroCrouchImage, 135, 127),
+  brandedHeroClimb: sheet(brandedHeroClimbImage, 150, 182),
+  brandedHeroSwing: sheet(brandedHeroJumpImage, 212, 188),
+  brandedHeroHurt: sheet(brandedHeroHurtImage, 163, 147),
+  brandedHeroCelebrate: sheet(brandedHeroCelebrateImage, 166, 150),
+  brandedHeroJackpotPower: sheet(brandedHeroJackpotPowerImage, 205, 163),
+  brandedVillainMaskKeeper: sheet(brandedVillainMaskKeeperImage, 496, 532),
+  brandedPlatform: sheet(brandedPlatformImage, 217, 133),
+  brandedPlatformTall: sheet(brandedPlatformTallImage, 130, 148),
+  brandedPlatformStep: sheet(brandedPlatformStepImage, 169, 147),
+  brandedPlatformLedge: sheet(brandedPlatformLedgeImage, 298, 157),
+  brandedRuinColumn: sheet(brandedRuinColumnImage, 136, 282),
+  brandedMossPatch: sheet(brandedMossPatchImage, 107, 93),
+  brandedCircuitLog: sheet(brandedCircuitLogImage, 222, 186),
+  brandedPurplePuddle: sheet(brandedPurplePuddleImage, 219, 212),
+  brandedGoldPuddle: sheet(brandedGoldPuddleImage, 200, 188),
+  brandedScorpion: sheet(brandedScorpionImage, 209, 205),
+  brandedBlueGem: sheet(brandedBlueGemImage, 125, 124),
+  brandedDiamondRing: sheet(brandedDiamondRingImage, 105, 138),
+  brandedTreasureChest: sheet(brandedTreasureChestImage, 167, 159),
+  brandedVaultGoal: sheet(brandedVaultGoalImage, 146, 221),
+  brandedLadder: sheet(brandedLadderImage, 112, 167),
+  brandedVinePurple: sheet(brandedVinePurpleImage, 49, 484),
+  brandedVineGold: sheet(brandedVineGoldImage, 45, 732),
+  brandedVineGreen: sheet(brandedVineGreenImage, 65, 728),
 } as const;
 
 export const ARCADE_ASSETS = {
@@ -138,38 +197,38 @@ export const ARCADE_ASSETS = {
     near: directSource(jungleVaultAmethystImage),
   },
   hero: {
-    masterSheet: heroMainTransparentImage as ImageSourcePropType,
+    masterSheet: brandedHeroIdleImage as ImageSourcePropType,
     poses: {
-      idle: cropSource(heroMainTransparentImage, cleanHeroCrops.idle),
-      run1: cropSource(heroMainTransparentImage, cleanHeroCrops.run1),
-      run2: cropSource(heroMainTransparentImage, cleanHeroCrops.run2),
-      jump: cropSource(heroMainTransparentImage, cleanHeroCrops.jump),
-      land: cropSource(heroMainTransparentImage, cleanHeroCrops.land),
-      crouch: cropSource(heroMainTransparentImage, cleanHeroCrops.crouch),
-      climb: cropSource(heroMainTransparentImage, cleanHeroCrops.climb),
-      hurt: cropSource(heroMainTransparentImage, cleanHeroCrops.hurt),
-      celebrate: cropSource(heroMainTransparentImage, cleanHeroCrops.celebrate),
-      jackpotPower: cropSource(heroMainTransparentImage, cleanHeroCrops.jackpotPower),
+      idle: directSource(brandedHeroIdleImage),
+      run1: directSource(brandedHeroRun1Image),
+      run2: directSource(brandedHeroRun2Image),
+      jump: directSource(brandedHeroJumpImage),
+      fall: directSource(brandedHeroLandImage),
+      land: directSource(brandedHeroLandImage),
+      crouch: directSource(brandedHeroCrouchImage),
+      climb: directSource(brandedHeroClimbImage),
+      swing: directSource(brandedHeroJumpImage),
+      hurt: directSource(brandedHeroHurtImage),
+      celebrate: directSource(brandedHeroCelebrateImage),
+      jackpotPower: directSource(brandedHeroJackpotPowerImage),
     } satisfies Record<HeroPose, SpriteSource>,
   },
   boss: {
-    crocodile: cropSource(bossCreatureSheetImage, creatureSpriteCrops.cyberCrocodile),
+    crocodile: directSource(brandedVillainMaskKeeperImage),
   },
   hazards: {
-    // TODO: replace these cropped concept sources with clean standalone hazard sprites when available.
-    circuitLog: cropSource(characterTransparentSheetImage, worldPropCrops.circuitLog),
-    dreamPuddle: cropSource(characterTransparentSheetImage, worldPropCrops.purplePuddle),
-    jackpotPuddle: cropSource(characterTransparentSheetImage, worldPropCrops.goldPuddle),
-    scorpion: cropSource(bossCreatureSheetImage, creatureSpriteCrops.scorpion),
+    circuitLog: directSource(brandedCircuitLogImage),
+    dreamPuddle: directSource(brandedPurplePuddleImage),
+    jackpotPuddle: directSource(brandedGoldPuddleImage),
+    scorpion: directSource(brandedScorpionImage),
   },
   pickups: {
-    // TODO: replace these cropped concept sources with exported collectible PNGs when available.
-    blueGem: cropSource(characterTransparentSheetImage, worldPropCrops.blueGem),
-    diamondRing: cropSource(characterTransparentSheetImage, worldPropCrops.diamondRing),
-    treasureChest: cropSource(characterTransparentSheetImage, worldPropCrops.treasureChest),
+    blueGem: directSource(brandedBlueGemImage),
+    diamondRing: directSource(brandedDiamondRingImage),
+    treasureChest: directSource(brandedTreasureChestImage),
   },
   goal: {
-    jackpotVault: cropSource(characterTransparentSheetImage, worldPropCrops.vaultGate),
+    jackpotVault: directSource(brandedVaultGoalImage),
   },
   promo: {
     spriteSheetPoster: directSource(characterTransparentSheetImage),
@@ -190,17 +249,20 @@ export const arcadeBackgroundArt = {
   gold: directAsset(arcadeSheets.jungleVaultGold, {
     swapHint: "Gold-lit jungle-vault variation generated from the supplied background reference.",
   }),
+  assetPackJungle: directAsset(arcadeSheets.brandedJungleBackground, {
+    swapHint: "Jungle biome background supplied in the new arcade environment asset pack.",
+  }),
 } as const;
 
 const backgroundLayerSets = {
   jackpotChase: [
-    { id: "chase-far", asset: arcadeBackgroundArt.far, parallax: 0.06, opacity: 0.6, verticalOffset: -18, scale: 1.08 },
+    { id: "chase-asset-pack-jungle", asset: arcadeBackgroundArt.assetPackJungle, parallax: 0.04, opacity: 0.62, verticalOffset: -26, scale: 1.2 },
     { id: "chase-amethyst", asset: arcadeBackgroundArt.near, parallax: 0.14, opacity: 0.34, verticalOffset: -4, scale: 1.08 },
     { id: "chase-gold", asset: arcadeBackgroundArt.gold, parallax: 0.22, opacity: 0.22, verticalOffset: 18, scale: 1.1 },
   ],
   gemRush: [
-    { id: "rush-emerald", asset: arcadeBackgroundArt.mid, parallax: 0.08, opacity: 0.58, verticalOffset: -20, scale: 1.08 },
-    { id: "rush-vault", asset: arcadeBackgroundArt.far, parallax: 0.18, opacity: 0.3, verticalOffset: 6, scale: 1.1 },
+    { id: "rush-asset-pack-jungle", asset: arcadeBackgroundArt.assetPackJungle, parallax: 0.05, opacity: 0.7, verticalOffset: -28, scale: 1.22 },
+    { id: "rush-emerald", asset: arcadeBackgroundArt.mid, parallax: 0.14, opacity: 0.28, verticalOffset: 4, scale: 1.08 },
     { id: "rush-gold", asset: arcadeBackgroundArt.gold, parallax: 0.28, opacity: 0.2, verticalOffset: 24, scale: 1.1 },
   ],
 } as const satisfies Record<string, readonly ArcadeParallaxLayerAsset[]>;
@@ -210,92 +272,89 @@ export type ArcadeBackgroundVariant = keyof typeof backgroundLayerSets;
 export const arcadeBackgroundLayers = arcadeBackgroundLayerSets.jackpotChase;
 
 export const arcadeHeroArt = {
-  sourceSheet: arcadeSheets.heroClean,
-  identityPortrait: directAsset(arcadeSheets.heroPortrait, {
-    placeholder: true,
-    swapHint: "Using the latest LottoMind cap-and-jacket mascot as the primary hero identity reference.",
+  sourceSheet: arcadeSheets.brandedHeroIdle,
+  identityPortrait: directAsset(arcadeSheets.brandedHeroIdle, {
+    swapHint: "Standalone transparent LottoMind hero sprite exported from the supplied movement set.",
   }),
   poses: {
-    idle: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.idle, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    idle: directAsset(arcadeSheets.brandedHeroIdle, {
+      swapHint: "Standalone transparent LottoMind hero idle sprite.",
     }),
-    run1: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.run1, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    run1: directAsset(arcadeSheets.brandedHeroRun1, {
+      swapHint: "Standalone transparent LottoMind hero run frame.",
     }),
-    run2: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.run2, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    run2: directAsset(arcadeSheets.brandedHeroRun2, {
+      swapHint: "Standalone transparent LottoMind hero speed frame.",
     }),
-    jump: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.jump, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    jump: directAsset(arcadeSheets.brandedHeroJump, {
+      swapHint: "Standalone transparent LottoMind hero jump sprite.",
     }),
-    land: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.land, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    fall: directAsset(arcadeSheets.brandedHeroFall, {
+      swapHint: "Standalone transparent LottoMind hero fall sprite.",
     }),
-    crouch: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.crouch, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    land: directAsset(arcadeSheets.brandedHeroLand, {
+      swapHint: "Standalone transparent LottoMind hero landing sprite.",
     }),
-    climb: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.climb, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    crouch: directAsset(arcadeSheets.brandedHeroCrouch, {
+      swapHint: "Standalone transparent LottoMind hero crouch sprite.",
     }),
-    hurt: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.hurt, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    climb: directAsset(arcadeSheets.brandedHeroClimb, {
+      swapHint: "Standalone transparent LottoMind hero climb/turnaround sprite.",
     }),
-    celebrate: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.celebrate, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    swing: directAsset(arcadeSheets.brandedHeroSwing, {
+      swapHint: "Standalone transparent LottoMind hero swing sprite.",
     }),
-    jackpotPower: croppedAsset(arcadeSheets.heroClean, cleanHeroCrops.jackpotPower, {
-      swapHint: "Using the supplied transparent mascot cutout as the clean gameplay hero.",
+    hurt: directAsset(arcadeSheets.brandedHeroHurt, {
+      swapHint: "Standalone transparent LottoMind hero hurt sprite.",
+    }),
+    celebrate: directAsset(arcadeSheets.brandedHeroCelebrate, {
+      swapHint: "Standalone transparent LottoMind hero celebrate sprite.",
+    }),
+    jackpotPower: directAsset(arcadeSheets.brandedHeroJackpotPower, {
+      swapHint: "Standalone transparent LottoMind hero power-mode sprite.",
     }),
   } as const satisfies Record<HeroPoseKey, ArcadeRenderableAsset>,
 } as const;
 
 export const arcadeBossArt = {
-  cyberCrocodile: croppedAsset(arcadeSheets.creatures, creatureSpriteCrops.cyberCrocodile, {
-    swapHint: "Using the transparent creature sheet for a cleaner 2D cyber-croc boss.",
+  cyberCrocodile: directAsset(arcadeSheets.brandedVillainMaskKeeper, {
+    swapHint: "Standalone transparent villain sprite supplied for Gem Rush and Jackpot Chase pressure stages.",
   }),
 } as const;
 
 export const arcadeObstacleArt = {
-  platformTop: croppedAsset(arcadeSheets.platform, worldPropCrops.platform, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  platformTop: directAsset(arcadeSheets.brandedPlatform, {
+    swapHint: "Standalone transparent platform sprite exported for the LottoMind arcade stages.",
   }),
-  circuitLog: croppedAsset(arcadeSheets.log, worldPropCrops.circuitLog, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  circuitLog: directAsset(arcadeSheets.brandedCircuitLog, {
+    swapHint: "Standalone transparent circuit-log hazard sprite.",
   }),
-  purpleDreamPuddle: croppedAsset(arcadeSheets.puddlePurple, worldPropCrops.purplePuddle, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  purpleDreamPuddle: directAsset(arcadeSheets.brandedPurplePuddle, {
+    swapHint: "Standalone transparent purple dream puddle hazard sprite.",
   }),
-  goldJackpotPuddle: croppedAsset(arcadeSheets.puddleGold, worldPropCrops.goldPuddle, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  goldJackpotPuddle: directAsset(arcadeSheets.brandedGoldPuddle, {
+    swapHint: "Standalone transparent gold jackpot puddle hazard sprite.",
   }),
-  scorpion: croppedAsset(arcadeSheets.creatures, creatureSpriteCrops.scorpion, {
-    swapHint: "Using the transparent creature sheet for a cleaner 2D scorpion hazard.",
+  scorpion: directAsset(arcadeSheets.brandedScorpion, {
+    swapHint: "Standalone transparent scorpion hazard sprite.",
   }),
 } as const;
 
 export const arcadePickupArt = {
-  blueGem: croppedAsset(arcadeSheets.gemBlue, worldPropCrops.blueGem, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  blueGem: directAsset(arcadeSheets.brandedBlueGem, {
+    swapHint: "Standalone transparent blue gem pickup sprite.",
   }),
-  diamondRing: croppedAsset(arcadeSheets.ringDiamond, worldPropCrops.diamondRing, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  diamondRing: directAsset(arcadeSheets.brandedDiamondRing, {
+    swapHint: "Standalone transparent diamond ring pickup sprite.",
   }),
-  treasureChest: croppedAsset(arcadeSheets.chest, worldPropCrops.treasureChest, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  treasureChest: directAsset(arcadeSheets.brandedTreasureChest, {
+    swapHint: "Standalone transparent treasure chest reward sprite.",
   }),
 } as const;
 
 export const arcadeGoalArt = {
-  jackpotVault: croppedAsset(arcadeSheets.vaultGoal, worldPropCrops.vaultGate, {
-    placeholder: true,
-    swapHint: "Using the transparent vault-gate crop from the current LottoMind cutout sheet.",
+  jackpotVault: directAsset(arcadeSheets.brandedVaultGoal, {
+    swapHint: "Standalone transparent jackpot vault goal sprite.",
   }),
   jackpotChest: arcadePickupArt.treasureChest,
   jackpotRing: arcadePickupArt.diamondRing,
@@ -310,37 +369,35 @@ export const arcadeSceneArt = {
     placeholder: true,
     swapHint: "Using the circuit-tree cutout from the environment sheet as a midground depth layer.",
   }),
-  vineGreen: croppedAsset(arcadeSheets.environmentDecor, environmentDecorCrops.vineGreen, {
-    placeholder: true,
-    swapHint: "Using the hanging vine strip from the environment sheet for 3D foreground depth.",
+  vineGreen: directAsset(arcadeSheets.brandedVineGreen, {
+    swapHint: "Standalone transparent green vine sprite from the environment asset pack.",
   }),
-  vinePurple: croppedAsset(arcadeSheets.environmentDecor, environmentDecorCrops.vinePurple, {
-    placeholder: true,
-    swapHint: "Using the purple hanging vine strip from the environment sheet for 3D foreground depth.",
+  vinePurple: directAsset(arcadeSheets.brandedVinePurple, {
+    swapHint: "Standalone transparent purple vine sprite from the environment asset pack.",
   }),
-  platformWide: croppedAsset(arcadeSheets.platform, worldPropCrops.platform, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  vineGold: directAsset(arcadeSheets.brandedVineGold, {
+    swapHint: "Standalone transparent gold vine sprite from the environment asset pack.",
   }),
-  platformTall: croppedAsset(arcadeSheets.platform, worldPropCrops.platformTall, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  ladder: directAsset(arcadeSheets.brandedLadder, {
+    swapHint: "Standalone transparent rope ladder sprite from the environment asset pack.",
   }),
-  platformStep: croppedAsset(arcadeSheets.platform, worldPropCrops.platformStep, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  platformWide: directAsset(arcadeSheets.brandedPlatform, {
+    swapHint: "Standalone transparent platform sprite exported for the LottoMind arcade stages.",
   }),
-  platformLedge: croppedAsset(arcadeSheets.platform, worldPropCrops.platformLedge, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  platformTall: directAsset(arcadeSheets.brandedPlatformTall, {
+    swapHint: "Standalone transparent tall platform sprite.",
   }),
-  ruinColumn: croppedAsset(arcadeSheets.platform, worldPropCrops.ruinColumn, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  platformStep: directAsset(arcadeSheets.brandedPlatformStep, {
+    swapHint: "Standalone transparent step platform sprite.",
   }),
-  mossPatch: croppedAsset(arcadeSheets.platform, worldPropCrops.mossPatch, {
-    placeholder: true,
-    swapHint: conceptSwapHint,
+  platformLedge: directAsset(arcadeSheets.brandedPlatformLedge, {
+    swapHint: "Standalone transparent ledge platform sprite.",
+  }),
+  ruinColumn: directAsset(arcadeSheets.brandedRuinColumn, {
+    swapHint: "Standalone transparent ruin-column sprite.",
+  }),
+  mossPatch: directAsset(arcadeSheets.brandedMossPatch, {
+    swapHint: "Standalone transparent moss patch sprite.",
   }),
 } as const;
 

@@ -48,6 +48,7 @@ import {
   LotteryState,
 } from '@/utils/pick3pick4Api';
 import { useLotto } from '@/providers/LottoProvider';
+import { analyzeLatestDailyPick } from '@/utils/dailyPickPowerLab';
 
 type PickGame = 'pick3' | 'pick4';
 type ViewMode = 'results' | 'prizes';
@@ -138,6 +139,10 @@ export default function PickGamesScreen() {
 
   const prizes: (Pick3Prize | Pick4Prize)[] = activeGame === 'pick3' ? PICK3_PRIZES : PICK4_PRIZES;
   const draws = activeGame === 'pick3' ? (draws3 ?? []) : (draws4 ?? []);
+  const powerLab = useMemo(() => {
+    if (!latestDraw) return null;
+    return analyzeLatestDailyPick(latestDraw.numbers, activeGame);
+  }, [latestDraw, activeGame]);
 
   const renderStateItem = useCallback(({ item }: { item: LotteryState }) => {
     const isSelected = item.code === pickState;
@@ -314,6 +319,37 @@ export default function PickGamesScreen() {
             ))}
           </View>
         </View>
+
+        {powerLab ? (
+          <View style={styles.hotDigitsCard}>
+            <View style={styles.hotDigitsHeader}>
+              <Target size={16} color={Colors.gold} />
+              <Text style={styles.hotDigitsTitle}>Daily 3 / Daily 4 Power Lab</Text>
+              <Text style={styles.hotDigitsState}>{powerLab.normalized}</Text>
+            </View>
+            <View style={styles.labGrid}>
+              <View style={styles.labTile}>
+                <Text style={styles.labLabel}>Sum</Text>
+                <Text style={styles.labValue}>{powerLab.sum}</Text>
+              </View>
+              <View style={styles.labTile}>
+                <Text style={styles.labLabel}>Root</Text>
+                <Text style={styles.labValue}>{powerLab.rootSum}</Text>
+              </View>
+              <View style={styles.labTile}>
+                <Text style={styles.labLabel}>Mirror</Text>
+                <Text style={styles.labValue}>{powerLab.mirror}</Text>
+              </View>
+              <View style={styles.labTile}>
+                <Text style={styles.labLabel}>Pairs</Text>
+                <Text style={styles.labValue}>{powerLab.pairs.slice(0, 3).join(' ')}</Text>
+              </View>
+            </View>
+            <Text style={styles.powerLabNote}>
+              {powerLab.oddEvenBalance} · {powerLab.highLowBalance} · {powerLab.hasRepeat ? 'repeat digits' : 'no repeats'}
+            </Text>
+          </View>
+        ) : null}
 
         {viewMode === 'prizes' && (
           <View style={styles.prizesSection}>
@@ -760,6 +796,37 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700' as const,
     color: Colors.textMuted,
+  },
+  labGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  labTile: {
+    width: '48%',
+    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.18)',
+  },
+  labLabel: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: Colors.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  labValue: {
+    fontSize: 16,
+    fontWeight: '900' as const,
+    color: Colors.gold,
+    marginTop: 4,
+  },
+  powerLabNote: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: Colors.textSecondary,
   },
   prizesSection: {
     gap: 14,

@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Audio } from "expo-av";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -11,6 +12,7 @@ import { ProProvider } from "@/providers/ProProvider";
 import { TriviaProvider } from "@/providers/TriviaProvider";
 import { ThemeProvider, useTheme } from "@/providers/ThemeProvider";
 import { MonetizationProvider } from "@/providers/MonetizationProvider";
+import { SettingsProvider } from "@/providers/SettingsProvider";
 import LegalDisclaimer from "@/components/LegalDisclaimer";
 import SwipeScreenNavigator from "@/components/SwipeScreenNavigator";
 
@@ -36,6 +38,13 @@ function RootLayoutNav() {
       <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="nationwide-analysis" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="lottomind-ai" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="psychic" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="future-read" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="daily-fortune" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="energy-meter" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="luck-profile" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="history-ui" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="name-numbers" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="shop" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="horoscope" options={{ presentation: 'modal', headerShown: false }} />
@@ -43,6 +52,7 @@ function RootLayoutNav() {
       <Stack.Screen name="trivia-play" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="trivia-redeem" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="arcade" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="games-hub" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="help" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="viral-studio" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="us-lottery" options={{ presentation: 'modal', headerShown: false }} />
@@ -53,6 +63,7 @@ function RootLayoutNav() {
       <Stack.Screen name="card-game" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="lottomind-historical" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="credit-store" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="lottomind-records" options={{ presentation: 'modal', headerShown: false }} />
     </Stack>
   );
 }
@@ -60,6 +71,48 @@ function RootLayoutNav() {
 export default function RootLayout() {
   useEffect(() => {
     void SplashScreen.hideAsync();
+  }, []);
+
+  useEffect(() => {
+    let startupSound: Audio.Sound | null = null;
+    let unloaded = false;
+
+    const playStartupMusic = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+        });
+
+        const { sound } = await Audio.Sound.createAsync(
+          require("../assets/audio/lottomind-startup.mp3"),
+          {
+            shouldPlay: true,
+            isLooping: false,
+            volume: 0.85,
+          }
+        );
+
+        startupSound = sound;
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish && !unloaded) {
+            unloaded = true;
+            void sound.unloadAsync();
+          }
+        });
+      } catch (error) {
+        console.log("[StartupAudio] Unable to play startup music", error);
+      }
+    };
+
+    void playStartupMusic();
+
+    return () => {
+      if (startupSound && !unloaded) {
+        unloaded = true;
+        void startupSound.unloadAsync();
+      }
+    };
   }, []);
 
   return (
@@ -71,14 +124,16 @@ export default function RootLayout() {
               <ProProvider>
                 <MonetizationProvider>
                   <TriviaProvider>
-                    <ThemeProvider>
-                      <LegalDisclaimer>
-                        <ThemedStatusBar />
-                        <SwipeScreenNavigator>
-                          <RootLayoutNav />
-                        </SwipeScreenNavigator>
-                      </LegalDisclaimer>
-                    </ThemeProvider>
+                    <SettingsProvider>
+                      <ThemeProvider>
+                        <LegalDisclaimer>
+                          <ThemedStatusBar />
+                          <SwipeScreenNavigator>
+                            <RootLayoutNav />
+                          </SwipeScreenNavigator>
+                        </LegalDisclaimer>
+                      </ThemeProvider>
+                    </SettingsProvider>
                   </TriviaProvider>
                 </MonetizationProvider>
               </ProProvider>
