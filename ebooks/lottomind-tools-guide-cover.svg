@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1200" viewBox="0 0 800 1200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#030611"/>
+      <stop offset="0.42" stop-color="#07192b"/>
+      <stop offset="1" stop-color="#050308"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff3a6"/>
+      <stop offset="0.42" stop-color="#d4af37"/>
+      <stop offset="1" stop-color="#8a6815"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="22%" r="58%">
+      <stop offset="0" stop-color="#00e5ff" stop-opacity="0.38"/>
+      <stop offset="0.45" stop-color="#00e5ff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#00e5ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="1200" fill="url(#bg)"/>
+  <rect width="800" height="1200" fill="url(#glow)"/>
+  <rect x="42" y="42" width="716" height="1116" rx="42" fill="none" stroke="url(#gold)" stroke-width="5"/>
+  <rect x="66" y="66" width="668" height="1068" rx="34" fill="none" stroke="#d4af37" stroke-opacity="0.22" stroke-width="2"/>
+
+  <circle cx="400" cy="190" r="96" fill="#061327" stroke="url(#gold)" stroke-width="6"/>
+  <circle cx="400" cy="190" r="64" fill="none" stroke="#00e5ff" stroke-opacity="0.45" stroke-width="5"/>
+  <path d="M335 190c34-62 96-62 130 0-34 62-96 62-130 0z" fill="none" stroke="url(#gold)" stroke-width="10" stroke-linejoin="round"/>
+  <circle cx="400" cy="190" r="19" fill="#d4af37"/>
+
+  <text x="400" y="342" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="900" fill="#7de8ff" letter-spacing="5">LOTTOMIND</text>
+  <text x="400" y="460" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="82" font-weight="900" fill="#ffffff">TOOLS</text>
+  <text x="400" y="548" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="78" font-weight="900" fill="#ffffff">GUIDE</text>
+  <text x="400" y="620" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" fill="#d4af37">A common-sense manual for every tool</text>
+
+  <g transform="translate(108 700)">
+    <rect x="0" y="0" width="584" height="210" rx="28" fill="#08111f" stroke="#d4af37" stroke-opacity="0.35"/>
+    <text x="292" y="62" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="40" fill="#ffffff">Dream. Analyze. Win.</text>
+    <text x="292" y="118" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" fill="#b9c7d7">Plain-English walkthroughs for picks, heatmaps,</text>
+    <text x="292" y="156" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" fill="#b9c7d7">dreams, credits, arcade games, and reports.</text>
+  </g>
+
+  <g transform="translate(132 982)">
+    <rect width="536" height="74" rx="37" fill="url(#gold)"/>
+    <text x="268" y="48" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="29" fill="#0b0a08">FREE BESTSELLER PDF</text>
+  </g>
+
+  <text x="400" y="1110" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#9fb4c7">Entertainment only. Lottery outcomes are random.</text>
+</svg>

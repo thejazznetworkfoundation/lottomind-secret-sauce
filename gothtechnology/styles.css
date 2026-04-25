@@ -181,6 +181,13 @@ canvas {
   background: linear-gradient(135deg, var(--purple), var(--teal));
 }
 
+.control-note {
+  margin: 12px 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 @media (max-width: 720px) {
   .intro {
     display: block;
@@ -207,5 +214,14 @@ canvas {
   .touch-deck button {
     flex: 1;
     min-width: 88px;
+  }
+
+  .hud {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    padding: 12px;
+    background: #02040a;
   }
 }
