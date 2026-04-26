@@ -21,7 +21,6 @@ import {
   ChevronRight,
   CircleDollarSign,
   Crown,
-  Gauge,
   Gamepad2,
   HelpCircle,
   LineChart,
@@ -64,12 +63,13 @@ interface CommandAction {
 
 type MetricVariant = 'market' | 'xp' | 'credits' | 'alerts';
 
-const commandCoreVideo = require('@/assets/videos/lottomind-command-core.mp4');
+const commandCoreVideo = require('@/assets/videos/arcade-top-preview.mp4');
 const powerToolsButtonImage = require('@/assets/images/dashboard-power-tools-action-sheet.png');
 const commandLogoImage = require('@/assets/images/lottomind-brain-logo.png');
 const dashboardHeroImage = require('@/assets/images/dashboard-dream-analyze-win-bg.webp');
 const dashboardMascotImage = require('@/assets/images/lottomind-dashboard-mascot.png');
 const dashboardMetricEmblemImage = require('@/assets/images/dashboard-metric-emblem.png');
+const aiXpButtonImage = require('@/assets/images/lottomind-ai-xp-button.png');
 const PLAY_ARCADE_VIDEO_PATH = '/videos/play-arcade-button-loop.mp4';
 const POWER_TOOLS_VIDEO_PATH = '/videos/power-tools-dashboard-box.mp4';
 const GITHUB_PAGES_BASE_PATH = '/lottomind-secret-sauce';
@@ -200,7 +200,7 @@ export default function LottoMindCommandCenter({
     pickState,
     setPickState,
   } = useLotto();
-  const { level, xp, credits, streakDays } = useGamification();
+  const { credits, streakDays } = useGamification();
   const {
     plan,
     monthlyCreditsRemaining,
@@ -452,10 +452,8 @@ export default function LottoMindCommandCenter({
             source={commandCoreVideo}
             style={[
               styles.heroVideo,
-              isCompactHero && styles.heroVideoCompact,
-              isUltraCompactHero && styles.heroVideoUltraCompact,
             ]}
-            resizeMode={ResizeMode.CONTAIN}
+            resizeMode={ResizeMode.COVER}
             shouldPlay
             isLooping
             isMuted
@@ -478,7 +476,7 @@ export default function LottoMindCommandCenter({
 
       <View style={styles.statGrid}>
         <MetricCard icon={Ticket} label="Market Games" value={`${stateGames.length}`} accent="#00E5FF" variant="market" />
-        <MetricCard icon={Gauge} label="AI XP" value={`${xp}`} accent={level.color} variant="xp" />
+        <AIXPMetricButton value="60" onPress={() => handleRoute('/lottomind-ai')} />
         <MetricCard icon={CircleDollarSign} label="Credits" value={`${totalAvailableCredits}`} accent={Colors.gold} variant="credits" />
         <MetricCard icon={Bell} label="Alerts" value={alertsEnabled ? 'On' : 'Off'} accent="#31F7C8" variant="alerts" />
       </View>
@@ -740,6 +738,29 @@ export default function LottoMindCommandCenter({
       </View>
 
     </View>
+  );
+}
+
+function AIXPMetricButton({
+  value,
+  onPress,
+}: {
+  value: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open LottoMind AI XP ${value}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.aiXpMetricButton, pressed && styles.aiXpMetricButtonPressed]}
+    >
+      <Image source={aiXpButtonImage} style={styles.aiXpMetricImage} resizeMode="cover" />
+      <View style={styles.aiXpMetricBadge}>
+        <Text style={styles.aiXpMetricLabel}>AI XP</Text>
+        <Text style={styles.aiXpMetricValue}>{value}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -1140,16 +1161,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   heroVideo: {
-    width: '88%',
-    height: '82%',
-  },
-  heroVideoCompact: {
-    width: '82%',
-    height: '74%',
-  },
-  heroVideoUltraCompact: {
-    width: '76%',
-    height: '66%',
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
   heroVideoOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1190,7 +1204,58 @@ const styles = StyleSheet.create({
   },
   statGrid: {
     flexDirection: 'row',
+    alignItems: 'stretch',
     gap: 8,
+  },
+  aiXpMetricButton: {
+    width: 92,
+    minHeight: 92,
+    borderRadius: 46,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: 'rgba(245, 200, 75, 0.86)',
+    shadowColor: '#D4AF37',
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+  },
+  aiXpMetricButtonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.97 }],
+  },
+  aiXpMetricImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  aiXpMetricBadge: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    bottom: 7,
+    minHeight: 24,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(5, 5, 5, 0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 200, 75, 0.58)',
+  },
+  aiXpMetricLabel: {
+    color: Colors.goldLight,
+    fontSize: 8,
+    lineHeight: 10,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  aiXpMetricValue: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    lineHeight: 12,
+    fontWeight: '900',
+    letterSpacing: 0,
   },
   metricCard: {
     flex: 1,
