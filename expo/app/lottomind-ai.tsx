@@ -252,10 +252,15 @@ export default function LottoMindAIScreen() {
                   testID="ai-generate-set"
                 >
                   <View style={styles.mainButtonGlow} />
-                  <Zap size={22} color="#1A1200" />
-                  <Text style={styles.mainButtonText}>
-                    {isLoading ? 'Generating AI Set...' : 'Generate AI Number Set'}
-                  </Text>
+                  <Zap size={22} color={Colors.gold} />
+                  <View style={styles.mainButtonCopy}>
+                    <Text style={styles.mainButtonText}>
+                      {isLoading ? 'Generating AI Set...' : 'Generate AI Number Set'}
+                    </Text>
+                    <View style={styles.mainButtonXpBadge}>
+                      <Text style={styles.mainButtonXpText}>AI XP 60</Text>
+                    </View>
+                  </View>
                 </TouchableOpacity>
               </Animated.View>
 
@@ -531,9 +536,12 @@ const styles = StyleSheet.create({
     color: Colors.gold,
   },
   mainButton: {
-    backgroundColor: Colors.gold,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: Colors.goldBorder,
     borderRadius: 16,
-    paddingVertical: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -547,13 +555,32 @@ const styles = StyleSheet.create({
   },
   mainButtonGlow: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: 'transparent',
     borderRadius: 16,
+  },
+  mainButtonCopy: {
+    alignItems: 'center',
+    gap: 5,
   },
   mainButtonText: {
     fontSize: 16,
     fontWeight: '800' as const,
-    color: '#1A1200',
+    color: Colors.gold,
+  },
+  mainButtonXpBadge: {
+    borderWidth: 1,
+    borderColor: Colors.goldBorder,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    backgroundColor: 'transparent',
+  },
+  mainButtonXpText: {
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: '800' as const,
+    letterSpacing: 0,
+    color: Colors.champagne,
   },
   loadingWrap: {
     alignItems: 'center',
