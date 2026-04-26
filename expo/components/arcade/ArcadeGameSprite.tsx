@@ -6,6 +6,7 @@ import type { ArcadeGameCatalogEntry } from "@/types/stage";
 
 const spriteSources: Partial<Record<string, ImageSourcePropType>> = {
   "gem-rush-run": require("@/assets/arcade/branded/blue-gem.png") as ImageSourcePropType,
+  "jackpot-jungle-chase": require("@/assets/arcade/branded/vine-gold.png") as ImageSourcePropType,
   "vault-run": require("@/assets/arcade/branded/hero-run1.png") as ImageSourcePropType,
   "jungle-lotto-classic": require("@/assets/arcade/branded/vine-green.png") as ImageSourcePropType,
   gothtechnology: require("@/assets/arcade/gothtechnology-hero-sheet.png") as ImageSourcePropType,
@@ -55,6 +56,7 @@ export function ArcadeGameSprite({ game, size = 64, compact = false, style }: Ar
           style={[
             styles.spriteImage,
             game.id === "jungle-lotto-classic" && styles.vineSprite,
+            game.id === "jackpot-jungle-chase" && styles.vineSprite,
             game.id === "gothtechnology" && styles.sheetSprite,
             pixelArtImageStyle,
           ]}

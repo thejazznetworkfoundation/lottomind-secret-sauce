@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Activity, Clock, Grid3x3, LayoutDashboard, Moon, Sparkles, Wrench } from 'lucide-react-native';
+import { Activity, Clock, Gamepad2, Grid3x3, LayoutDashboard, Moon, Sparkles, Wrench } from 'lucide-react-native';
 import React from 'react';
 import { Platform } from 'react-native';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -93,7 +93,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Clock color={color} size={size} />,
         }}
       />
-      <Tabs.Screen name="games" options={{ href: null }} />
+      <Tabs.Screen
+        name="games"
+        options={{
+          title: 'Arcade',
+          tabBarIcon: ({ color, size }) => <Gamepad2 color={color} size={size} />,
+        }}
+      />
       <Tabs.Screen name="tools" options={{ href: null }} />
       <Tabs.Screen name="wallet" options={{ href: null }} />
       <Tabs.Screen name="more" options={{ href: null }} />

@@ -52,6 +52,11 @@ function RootLayoutNav() {
       <Stack.Screen name="trivia-play" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="trivia-redeem" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="arcade" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="arcade/game" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="arcade/stage-map" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="arcade/character-select" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="arcade/leaderboard" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="arcade/store" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="games-hub" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="help" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="viral-studio" options={{ presentation: 'modal', headerShown: false }} />

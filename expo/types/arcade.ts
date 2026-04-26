@@ -423,3 +423,174 @@ export interface ArcadeSnapshot {
   rewards: ArcadeRewardGrant | null;
   summary: ArcadeRunSummary;
 }
+
+export type JungleStageId =
+  | "golden-vine-swing"
+  | "lucky-river-dive"
+  | "temple-boulder-run"
+  | "dream-oracle-cavern"
+  | "jackpot-beast-boss-chase";
+
+export type JunglePathChoice = "fire" | "water" | "gold";
+
+export type JunglePlayerAnimationState =
+  | "idle"
+  | "run"
+  | "jump"
+  | "swing"
+  | "swim"
+  | "slide"
+  | "hit"
+  | "victory";
+
+export type JungleGameStatus = "loading" | "ready" | "running" | "paused" | "victory" | "gameOver";
+
+export type JungleBallGameType = "powerball" | "megaMillions" | "daily3" | "daily4" | "dream";
+
+export type JungleBallRarity = "hot" | "cold" | "balanced" | "jackpot";
+
+export interface Ball {
+  id: string;
+  number: number;
+  gameType: JungleBallGameType;
+  rarity: JungleBallRarity;
+  points: number;
+}
+
+export interface JungleCollectible extends Ball, Rect {
+  collected: boolean;
+  symbol?: string;
+  magnetized?: boolean;
+}
+
+export type JungleHazardKind =
+  | "thornVine"
+  | "fallingCoconut"
+  | "crackedBranch"
+  | "numberGhost"
+  | "crocShadow"
+  | "electricEel"
+  | "spinningCoin"
+  | "bubbleTrap"
+  | "jackpotBoulder"
+  | "templeGate"
+  | "oracleFlare"
+  | "beastClaw";
+
+export interface JungleHazard extends Rect {
+  id: string;
+  kind: JungleHazardKind;
+  speed: number;
+  damage: number;
+  label: string;
+}
+
+export type JunglePowerUpId =
+  | "dreamShield"
+  | "frequencyMagnet"
+  | "hotNumberBoost"
+  | "oracleSlowTime"
+  | "vaultKey"
+  | "goldOxygenOrb";
+
+export interface JunglePowerUp extends Rect {
+  id: string;
+  type: JunglePowerUpId;
+  collected: boolean;
+}
+
+export interface JunglePlatform extends Rect {
+  id: string;
+  kind: "landing" | "branch" | "temple" | "vault";
+}
+
+export interface JungleVine {
+  id: string;
+  anchorX: number;
+  anchorY: number;
+  length: number;
+  angle: number;
+  angularVelocity: number;
+}
+
+export interface JungleBossState {
+  name: "Probability Beast";
+  distance: number;
+  hearts: number;
+  requiredGoldWhiteBalls: number;
+  requiredRedJackpotBalls: number;
+}
+
+export interface JunglePlayer extends Rect {
+  vx: number;
+  vy: number;
+  state: JunglePlayerAnimationState;
+  facing: "left" | "right";
+  grounded: boolean;
+  invulnerableUntil: number;
+}
+
+export interface JungleInventory {
+  dreamShield: number;
+  frequencyMagnet: number;
+  hotNumberBoost: number;
+  oracleSlowTime: number;
+  vaultKey: number;
+  goldOxygenOrb: number;
+}
+
+export interface JungleActivePowerUps {
+  dreamShield: boolean;
+  frequencyMagnetUntil: number;
+  hotNumberBoostUntil: number;
+  oracleSlowTimeUntil: number;
+}
+
+export interface JungleStageConfig {
+  id: JungleStageId;
+  order: number;
+  title: string;
+  shortTitle: string;
+  subtitle: string;
+  objective: string;
+  mechanic: "swing" | "swim" | "runner" | "oracle" | "boss";
+  accentColor: string;
+  credits: number;
+  perfectCredits: number;
+}
+
+export interface JungleStagePattern {
+  stageId: JungleStageId;
+  seed: number;
+  balls: JungleCollectible[];
+  hazards: JungleHazard[];
+  powerUps: JunglePowerUp[];
+  platforms: JunglePlatform[];
+  vines: JungleVine[];
+  stageLength: number;
+}
+
+export interface JungleScorePopup {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  ttl: number;
+}
+
+export interface JungleRunResult {
+  score: number;
+  creditsEarned: number;
+  stageId: JungleStageId;
+  perfect: boolean;
+  bossWin: boolean;
+  collectedBalls: Ball[];
+}
+
+export interface LeaderboardEntry {
+  id: string;
+  playerName: string;
+  score: number;
+  stageId: JungleStageId;
+  date: string;
+}

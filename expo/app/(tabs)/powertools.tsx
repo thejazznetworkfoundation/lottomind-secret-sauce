@@ -281,7 +281,7 @@ export default function PowerToolsScreen() {
       tools: [
         {
           title: 'LottoMind™ Arcade',
-          detail: 'Play Vault Run, Jungle Lotto, Gothtechnology, and more.',
+          detail: 'Play Jackpot Jungle Chase, Vault Run, Jungle Lotto, Gothtechnology, and more.',
           route: '/arcade',
           accent: Colors.gold,
           icon: Trophy,

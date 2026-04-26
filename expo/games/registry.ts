@@ -1,6 +1,7 @@
 import { crosswordGame } from "@/games/crossword";
 import { gemRushGame } from "@/games/gemRush";
 import { gothtechnologyGame } from "@/games/gothtechnology";
+import { jackpotJungleChaseGame } from "@/games/jackpotJungleChase";
 import { jungleLottoGame } from "@/games/jungleLotto";
 import { ludoDiceGame } from "@/games/ludoDice";
 import { memoryGame } from "@/games/memory";
@@ -10,6 +11,7 @@ import { wordSearchGame } from "@/games/wordSearch";
 import type { ArcadeGameCategoryId, ArcadeGameCatalogEntry } from "@/types/stage";
 
 export const arcadeGameCatalog: readonly ArcadeGameCatalogEntry[] = [
+  jackpotJungleChaseGame,
   gemRushGame,
   vaultRunGame,
   jungleLottoGame,
